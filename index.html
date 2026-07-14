@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Botinkit TasteLab AI</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body data-lang="zh">
+    <a class="skip-link" href="#main-content">跳到工作区</a>
+
+    <main class="login-page" data-login-page>
+      <section class="login-card" aria-labelledby="login-title">
+        <div class="login-brand-panel">
+          <img class="brand-logo" src="assets/botinkit-logo-reverse.png" alt="BOTINKIT">
+          <span>TasteLab AI</span>
+          <h1 data-login-hero-title>企业菜品研发入口</h1>
+          <p data-login-hero-copy>登录后进入企业空间，继续管理菜品 Brief、机器人数据、实验版本、最终菜谱和归档记录。</p>
+          <div class="login-proof">
+            <span data-login-proof="workspace">企业空间</span>
+            <span data-login-proof="privacy">项目私有</span>
+            <span data-login-proof="archive">最终归档</span>
+          </div>
+        </div>
+        <div class="login-panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-kicker" data-login-kicker>企业登录</p>
+              <h2 id="login-title">登录 TasteLab AI</h2>
+            </div>
+          </div>
+          <p class="login-intro" data-login-intro>使用企业邮箱或手机号进入团队研发空间。</p>
+          <form class="login-form">
+            <label><span data-login-label="email">企业邮箱 / 手机号</span><input type="text" value="hannah@botinkit.ai" autocomplete="username"></label>
+            <label><span data-login-label="password">密码或验证码</span><input type="password" value="123456" autocomplete="current-password"></label>
+            <label><span data-login-label="workspace">企业空间</span><select data-login-workspace><option>Botinkit 深圳研发空间</option><option>Botinkit Global Taste Lab</option></select></label>
+            <div class="login-actions">
+              <button class="primary-button full" type="submit"><i data-lucide="log-in" aria-hidden="true"></i><span data-login-action="submit">登录</span></button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <div class="app-shell" hidden>
+      <aside class="side-rail" aria-label="TasteLab navigation">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="assets/botinkit-logo-reverse.png" alt="BOTINKIT">
+          <span>TasteLab AI</span>
+        </div>
+
+        <nav class="main-nav side-nav" aria-label="Primary">
+          <section class="side-nav-section panel-nav-section" aria-labelledby="panel-nav-title">
+            <p class="side-nav-title" id="panel-nav-title" data-nav-section="panels">工作面板</p>
+            <div class="panel-nav-list">
+              <button class="nav-item panel-nav-item is-active" type="button" data-view-target="dashboard" data-nav-key="dashboard">
+                <span class="nav-symbol" aria-hidden="true"><i data-lucide="layout-dashboard"></i></span>
+                <span><strong>项目中心</strong><small>项目与待办</small></span>
+              </button>
+              <button class="nav-item panel-nav-item" type="button" data-view-target="archive" data-nav-key="archive">
+                <span class="nav-symbol" aria-hidden="true"><i data-lucide="archive"></i></span>
+                <span><strong>归档记录</strong><small>已完成项目</small></span>
+              </button>
+            </div>
+          </section>
+
+          <section class="side-nav-section workflow-nav-section" aria-labelledby="workflow-nav-title">
+            <p class="side-nav-title" id="workflow-nav-title" data-nav-section="workflow">当前菜品流程</p>
+            <div class="workflow-step-list">
+              <button class="nav-item workflow-step" type="button" data-view-target="ideation" data-stage-key="ideation" data-workflow-step>
+                <span class="workflow-index" aria-hidden="true">01</span>
+                <span><strong>研发 Brief</strong><small>需求确认</small></span>
+                <em>未开始</em>
+              </button>
+              <button class="nav-item workflow-step" type="button" data-view-target="blueprint" data-stage-key="blueprint" data-workflow-step>
+                <span class="workflow-index" aria-hidden="true">02</span>
+                <span><strong>机器人数据</strong><small>执行参数</small></span>
+                <em>未开始</em>
+              </button>
+              <button class="nav-item workflow-step" type="button" data-view-target="versions" data-stage-key="versions" data-workflow-step>
+                <span class="workflow-index" aria-hidden="true">03</span>
+                <span><strong>实验版本</strong><small>打样对比</small></span>
+                <em>未开始</em>
+              </button>
+              <button class="nav-item workflow-step" type="button" data-view-target="localization" data-stage-key="localization" data-workflow-step>
+                <span class="workflow-index" aria-hidden="true">04</span>
+                <span><strong>本地化适配</strong><small>市场变体</small></span>
+                <em>未开始</em>
+              </button>
+              <button class="nav-item workflow-step" type="button" data-view-target="final" data-stage-key="final" data-workflow-step>
+                <span class="workflow-index" aria-hidden="true">05</span>
+                <span><strong>最终菜谱</strong><small>可归档版本</small></span>
+                <em>未开始</em>
+              </button>
+            </div>
+          </section>
+        </nav>
+
+        <section class="privacy-panel workspace-panel" aria-labelledby="privacy-title">
+          <p id="privacy-title">企业空间</p>
+          <div class="privacy-current">
+            <i data-lucide="building-2" aria-hidden="true"></i>
+            <span data-privacy-state-label>内部研发</span>
+          </div>
+          <strong class="workspace-name" data-current-workspace>Botinkit 深圳研发空间</strong>
+          <p class="privacy-copy" data-privacy-copy>客户菜谱与实验记录仅在团队空间内可见。</p>
+          <button class="privacy-action" type="button" data-view-target="final" data-privacy-cta>查看最终菜谱</button>
+        </section>
+      </aside>
+
+      <main class="workspace" id="main-content">
+        <header class="top-bar">
+          <div class="top-title-block">
+            <span class="top-mark-frame" aria-hidden="true"><img class="top-mark" src="assets/favicon.png" alt=""></span>
+            <div>
+              <p class="workspace-label">TasteLab AI / 菜品研发平台</p>
+              <h1>新建菜品研发项目</h1>
+              <div class="project-meta" aria-live="polite">
+                <span data-current-stage>当前阶段：项目中心</span>
+                <span data-save-state>有未保存更改</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-actions">
+            <div class="language-switcher" role="group" aria-label="Language">
+              <button class="language-option is-active" type="button" data-language="zh" aria-pressed="true">中文</button>
+              <button class="language-option" type="button" data-language="en" aria-pressed="false">EN</button>
+            </div>
+            <div class="auth-area">
+              <button class="secondary-button" type="button" data-action="open-login"><i data-lucide="log-in" aria-hidden="true"></i><span>登录</span></button>
+              <button class="account-button" type="button" data-action="toggle-account" hidden>
+                <span class="avatar">HM</span>
+                <span><strong data-account-workspace>Botinkit 深圳研发空间</strong><small data-account-user>Hannah Ma · 产品设计</small></span>
+                <i data-lucide="chevron-down" aria-hidden="true"></i>
+              </button>
+              <div class="account-menu" data-account-menu hidden>
+                <strong data-account-menu-title>企业账号</strong>
+                <p data-account-menu-workspace>Botinkit 深圳研发空间</p>
+                <button type="button" data-action="logout">退出登录</button>
+              </div>
+            </div>
+            <button class="primary-button" type="button" data-action="save-progress"><i data-lucide="save" aria-hidden="true"></i><span>保存进度</span></button>
+          </div>
+        </header>
+
+        <section class="view is-visible" data-view="dashboard" aria-labelledby="dashboard-title">
+          <div class="project-center-layout">
+            <section class="panel project-center-hero" aria-labelledby="dashboard-title">
+              <div>
+                <p class="section-kicker" data-project-center-kicker>项目中心</p>
+                <h2 id="dashboard-title" data-project-center-title>企业研发项目</h2>
+                <p data-project-center-intro>所有保存中的菜品研发都会先回到这里。继续编辑进行中项目；确认完成后再归档为正式菜谱。</p>
+              </div>
+              <button class="primary-button" type="button" data-action="start-new-project"><i data-lucide="plus" aria-hidden="true"></i><span data-project-center-action>新建研发项目</span></button>
+            </section>
+
+            <section class="panel project-list-panel" aria-labelledby="active-projects-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker" data-project-list-kicker="active">Draft projects</p>
+                  <h2 id="active-projects-title" data-project-list-title="active">进行中项目</h2>
+                </div>
+                <span class="status-pill success" data-project-count="active">0</span>
+              </div>
+              <div class="project-list" data-project-list="active"></div>
+            </section>
+
+            <section class="panel project-list-panel" aria-labelledby="todo-projects-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker" data-project-list-kicker="todo">Action needed</p>
+                  <h2 id="todo-projects-title" data-project-list-title="todo">待我处理</h2>
+                  <p class="panel-note" data-project-list-note="todo">需要你确认、处理冲突或查看反馈的事项。</p>
+                </div>
+                <span class="status-pill warning" data-project-count="todo">0</span>
+              </div>
+              <div class="todo-list" data-project-list="todo"></div>
+            </section>
+
+            <section class="panel project-list-panel" aria-labelledby="archived-projects-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker" data-project-list-kicker="archive">Archive</p>
+                  <h2 id="archived-projects-title" data-project-list-title="archive">已归档项目</h2>
+                </div>
+                <button class="secondary-button compact" type="button" data-view-target="archive"><i data-lucide="archive" aria-hidden="true"></i><span data-project-center-view-archive>查看全部</span></button>
+              </div>
+              <div class="project-list compact" data-project-list="archive-preview"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" data-view="ideation" aria-labelledby="ideation-title">
+          <div class="two-column">
+            <section class="panel" aria-labelledby="ideation-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker">AI 主厨副驾</p>
+                  <h2 id="ideation-title">新菜研发</h2>
+                </div>
+                <span class="status-pill info">结构化 Brief</span>
+              </div>
+              <form class="ai-form brief-form" novalidate>
+                <div class="brief-section project-naming" aria-labelledby="project-naming-title">
+                  <h3 id="project-naming-title" data-project-naming-title>项目命名</h3>
+                  <div class="input-grid brief-grid">
+                    <label><span data-project-name-label>项目名称</span><input data-project-name type="text" placeholder="例如：2026 Q3 海外午餐鸡肉饭研发"></label>
+                    <label><span data-dish-name-label>菜品工作名</span><input data-dish-name type="text" placeholder="例如：川味鸡肉饭"></label>
+                  </div>
+                  <p class="field-help" data-ai-name-note>AI 可以建议菜品名，但不会自动覆盖项目名称或菜品工作名。</p>
+                  <div class="chip-row ai-name-suggestions" data-ai-name-suggestions aria-label="AI 推荐菜品名">
+                    <span>麻香鸡肉饭</span>
+                    <span>椒香嫩鸡饭</span>
+                    <span>Sichuan Pepper Chicken Rice</span>
+                  </div>
+                  <p class="field-help name-feedback" data-ai-name-feedback hidden></p>
+                </div>
+                <label for="dish-brief">菜品目标</label>
+                <textarea id="dish-brief" name="dishBrief" rows="6" placeholder="例如：为海外门店开发一款川味鸡肉饭，适合午餐高峰，微辣可选，保留花椒香气，目标成本低于 3 美元。"></textarea>
+                <p class="field-error" id="dish-brief-error" hidden>请输入菜品目标，AI 才能生成机器人数据。</p>
+
+                <div class="brief-builder">
+                  <section class="brief-section" aria-labelledby="brief-context-title">
+                    <h3 id="brief-context-title" data-brief-section-title="context">研发上下文</h3>
+                    <div class="input-grid brief-grid">
+                      <label><span data-brief-label="type">研发类型</span><select data-brief-control="type"></select></label>
+                      <label><span data-brief-label="scene">门店场景</span><select data-brief-control="scene"></select></label>
+                      <div class="brief-field market-field" data-market-field>
+                        <span data-brief-label="markets">目标市场</span>
+                        <input data-brief-control="markets" type="hidden">
+                        <div class="market-dropdown" data-market-dropdown>
+                          <button class="market-select-trigger is-placeholder" type="button" data-action="toggle-market-menu" aria-haspopup="listbox" aria-expanded="false">
+                            <span data-market-summary>请选择目标市场</span>
+                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                          </button>
+                          <div class="market-menu" data-market-options role="listbox" aria-label="目标市场选项" hidden></div>
+                        </div>
+                      </div>
+                      <label><span data-brief-label="audience">目标客群</span><select data-brief-control="audience"></select></label>
+                    </div>
+                  </section>
+
+                  <section class="brief-section" aria-labelledby="brief-position-title">
+                    <h3 id="brief-position-title" data-brief-section-title="positioning">菜品定位</h3>
+                    <div class="input-grid brief-grid">
+                      <label><span data-brief-label="protein">主蛋白</span><select data-brief-control="protein"></select></label>
+                      <label><span data-brief-label="price">价格 / 成本</span><input data-brief-control="price" type="text" placeholder="例如：$8.90-$10.90 / 成本 $2.84"></label>
+                      <label><span data-brief-label="spice">口味目标</span><select data-brief-control="spice"></select></label>
+                      <label><span data-brief-label="aroma">感官目标</span><select data-brief-control="aroma"></select></label>
+                    </div>
+                  </section>
+
+                  <section class="brief-section" aria-labelledby="brief-boundary-title">
+                    <h3 id="brief-boundary-title" data-brief-section-title="boundaries">限制与机器人边界</h3>
+                    <div class="input-grid brief-grid">
+                      <label><span data-brief-label="constraints">限制条件</span><input data-brief-control="constraints" type="text" placeholder="例如：不含花生、微辣档、低钠酱汁"></label>
+                      <label><span data-brief-label="batch">目标批量</span><input data-brief-control="batch" type="text" placeholder="例如：18-24 份"></label>
+                      <label><span data-brief-label="prep">预处理程度</span><select data-brief-control="prep"></select></label>
+                      <label><span data-brief-label="robot">机器人动作边界</span><select data-brief-control="robot"></select></label>
+                    </div>
+                  </section>
+                </div>
+
+                <p class="field-help brief-progress" data-brief-progress aria-live="polite">Brief 完成度：0/6 必填已完成</p>
+                <button class="primary-button" type="submit" data-generate-button disabled><i data-lucide="sparkles" aria-hidden="true"></i><span>请先完成必填项</span></button>
+              </form>
+            </section>
+
+            <div class="side-stack">
+              <section class="panel conflict-panel" aria-labelledby="conflict-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="section-kicker">AI 解析</p>
+                    <h2 id="conflict-title">AI 实时解析与冲突检查</h2>
+                  </div>
+                  <span class="status-pill warning" data-conflict-status>等待输入 Brief</span>
+                </div>
+                <div class="analysis-grid">
+                  <section class="analysis-block">
+                    <h3 data-analysis-title="detected">从描述识别到</h3>
+                    <ul data-analysis-list="detected">
+                      <li class="is-empty">填写菜品目标后，AI 会识别场景、口味、成本和限制条件。</li>
+                    </ul>
+                  </section>
+                  <section class="analysis-block">
+                    <h3 data-analysis-title="confirmed">用户已确认</h3>
+                    <ul data-analysis-list="confirmed">
+                      <li class="is-empty">选择结构化字段后会在这里同步。</li>
+                    </ul>
+                  </section>
+                </div>
+                <section class="analysis-keywords" data-sensory-keywords-panel hidden>
+                  <h3 data-analysis-title="sensory">AI 识别的感官关键词</h3>
+                  <div class="chip-row sensory-chip-row" data-sensory-keywords></div>
+                </section>
+                <div class="conflict-list" data-conflict-list></div>
+              </section>
+
+              <section class="panel" aria-labelledby="robotize-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="section-kicker">已有菜谱入口</p>
+                    <h2 id="robotize-title">已有厨师菜谱？转成机器人步骤</h2>
+                  </div>
+                  <span class="status-pill neutral">可选入口</span>
+                </div>
+                <label for="chef-recipe">厨师原始描述</label>
+                <textarea id="chef-recipe" rows="7" placeholder="粘贴厨师自然语言菜谱，例如：热锅下油，鸡腿肉炒到边缘焦香，加豆瓣、姜蒜和花椒油，最后用高汤收汁。"></textarea>
+                <button class="secondary-button" type="button" data-action="robotize" disabled><i data-lucide="bot" aria-hidden="true"></i><span>标准化步骤</span></button>
+                <ol class="step-list" data-robotized-steps>
+                  <li class="is-empty">输入厨师原始描述后，可生成标准机器人步骤。</li>
+                </ol>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view="blueprint" aria-labelledby="blueprint-title">
+          <div class="blueprint-layout">
+            <section class="panel blueprint-main" aria-labelledby="blueprint-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker">Robot executable data</p>
+                  <h2 id="blueprint-title">机器人可执行数据</h2>
+                </div>
+                <span class="status-pill success" data-blueprint-state>V4 generated</span>
+              </div>
+
+              <div class="blueprint-section temperature-schedule" role="img" aria-label="Segmented temperature schedule from preheat to finish">
+                <div class="section-subhead">
+                  <h3 data-temperature-title>火力阶段</h3>
+                  <p data-temperature-subtitle>温度按阶段锁定展示，不与锅体动作混在同一图中。</p>
+                </div>
+                <div class="stage-grid">
+                  <article class="temperature-stage"><span>0-12s</span><strong>180C</strong><small>预热</small></article>
+                  <article class="temperature-stage"><span>12-54s</span><strong>198C</strong><small>煎香</small></article>
+                  <article class="temperature-stage"><span>54-96s</span><strong>158C</strong><small>收汁</small></article>
+                  <article class="temperature-stage"><span>96-120s</span><strong>142C</strong><small>出锅</small></article>
+                </div>
+              </div>
+
+              <div class="blueprint-section ingredient-schedule">
+                <div class="section-subhead">
+                  <h3 data-ingredient-title>投料节奏</h3>
+                </div>
+                <div class="schedule-table" role="table" aria-label="Ingredient timing schedule">
+                  <div class="schedule-row schedule-header" role="row">
+                    <span role="columnheader">时间</span>
+                    <span role="columnheader">投料</span>
+                    <span role="columnheader">用量</span>
+                  </div>
+                  <div class="schedule-row" role="row">
+                    <span role="cell">12s</span>
+                    <span role="cell">鸡腿肉</span>
+                    <span role="cell">220 g</span>
+                  </div>
+                  <div class="schedule-row" role="row">
+                    <span role="cell">54s</span>
+                    <span role="cell">酱料</span>
+                    <span role="cell">36 g</span>
+                  </div>
+                  <div class="schedule-row" role="row">
+                    <span role="cell">78s</span>
+                    <span role="cell">高汤</span>
+                    <span role="cell">42 ml</span>
+                  </div>
+                  <div class="schedule-row" role="row">
+                    <span role="cell">108s</span>
+                    <span role="cell">点缀</span>
+                    <span role="cell">8 g</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="parameter-grid">
+                <label>预热温度 <input type="range" min="160" max="210" value="180" data-range-output="preheat-value"><span id="preheat-value">180C</span></label>
+                <label>翻炒速度 <input type="range" min="18" max="48" value="38" data-range-output="speed-value"><span id="speed-value">38 rpm</span></label>
+                <label>酱料投放 <input type="range" min="35" max="90" value="62" data-range-output="sauce-value"><span id="sauce-value">62s</span></label>
+                <label>批量范围 <input type="range" min="12" max="30" value="24" data-range-output="batch-value"><span id="batch-value">24 份</span></label>
+              </div>
+              <div class="stage-actions">
+                <button class="secondary-button" type="button" data-action="advance-workflow" data-next-stage="versions"><i data-lucide="flask-conical" aria-hidden="true"></i><span data-stage-action="blueprintNext">创建实验版本</span></button>
+              </div>
+            </section>
+
+            <div class="side-stack">
+              <section class="panel action-panel" aria-labelledby="action-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="section-kicker">Wok action strategy</p>
+                    <h2 id="action-title">锅体动作</h2>
+                  </div>
+                </div>
+                <ol class="action-list">
+                  <li><strong>轻翻</strong><span>12-42s / 38 rpm / 鸡肉上色</span></li>
+                  <li><strong>混合</strong><span>54-78s / 22 rpm / 酱料均匀包裹</span></li>
+                  <li><strong>收汁</strong><span>78-104s / 16 rpm / 控制米饭颗粒感</span></li>
+                </ol>
+              </section>
+
+              <section class="panel quality-panel" aria-labelledby="quality-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="section-kicker">Quality gates</p>
+                    <h2 id="quality-title">质检点 / QC gates</h2>
+                  </div>
+                </div>
+                <ul class="check-list">
+                  <li><span class="check-dot success"></span><strong>鸡肉边缘焦香</strong><small>Visible browning at 42-48 seconds</small></li>
+                  <li><span class="check-dot warning"></span><strong>花椒香气保留</strong><small>Oil added after high-heat stage</small></li>
+                  <li><span class="check-dot success"></span><strong>米饭颗粒感</strong><small>Hold sauce viscosity under 34 Brix</small></li>
+                  <li><span class="check-dot danger"></span><strong>高峰批量风险</strong><small>Above 24 portions may soften garnish</small></li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view="versions" aria-labelledby="versions-title">
+          <div class="two-column">
+            <section class="panel" aria-labelledby="versions-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker">Experiment versions</p>
+                  <h2 id="versions-title">实验版本对比</h2>
+                </div>
+              </div>
+              <div class="version-list" role="listbox" aria-label="Experiment versions">
+                <button class="version-row is-selected" type="button" data-version="V4">
+                  <span>V4</span>
+                  <strong>麻香后置 / Late pepper oil</strong>
+                  <small>Score 8.6, cost $2.84</small>
+                </button>
+                <button class="version-row" type="button" data-version="V3">
+                  <span>V3</span>
+                  <strong>酱料提前 / Early sauce</strong>
+                  <small>Score 7.9, cost $2.79</small>
+                </button>
+                <button class="version-row" type="button" data-version="V2">
+                  <span>V2</span>
+                  <strong>高火快炒 / High heat</strong>
+                  <small>Score 7.4, cost $2.92</small>
+                </button>
+              </div>
+            </section>
+
+            <section class="panel" aria-labelledby="version-detail-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker">Selected version</p>
+                  <h2 id="version-detail-title" data-version-title>V4 麻香后置</h2>
+                </div>
+                <span class="status-pill success" data-version-score>8.6 tasting score</span>
+              </div>
+              <div class="version-detail">
+                <img src="assets/sichuan-chicken-lab-preview.png" alt="Selected Sichuan chicken rice experiment">
+                <dl>
+                  <div><dt>主要变化 / Change</dt><dd data-version-change>花椒油后置，香气提升，辣度更稳定。</dd></div>
+                  <div><dt>审核记录 / Audit</dt><dd>AI draft -> Chef approved -> Expert pending</dd></div>
+                  <div><dt>下一步 / Next step</dt><dd>Run 24-portion batch in Singapore pilot store.</dd></div>
+                </dl>
+                <div class="stage-actions">
+                  <button class="primary-button" type="button" data-action="advance-workflow" data-next-stage="localization"><i data-lucide="check-check" aria-hidden="true"></i><span data-stage-action="versionsNext">确认版本</span></button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" data-view="localization" aria-labelledby="localization-title">
+          <section class="panel" aria-labelledby="localization-title">
+            <div class="panel-header">
+              <div>
+                <p class="section-kicker">Regional adaptation</p>
+                <h2 id="localization-title">多地区本地化变体</h2>
+              </div>
+              <button class="secondary-button compact" type="button" data-action="compare-locales"><i data-lucide="refresh-cw" aria-hidden="true"></i><span>比较</span></button>
+            </div>
+            <div class="locale-grid">
+              <article class="locale-card">
+                <h3>中国大陆</h3>
+                <p>保留中辣和豆瓣香，午餐套餐可加青笋丁。</p>
+                <dl><div><dt>辣度</dt><dd>3.5/5</dd></div><div><dt>成本</dt><dd>$2.42</dd></div><div><dt>替换</dt><dd>本地鸡腿肉</dd></div></dl>
+              </article>
+              <article class="locale-card">
+                <h3>新加坡</h3>
+                <p>辣度分层，增加微辣档，减少油感并保留花椒香。</p>
+                <dl><div><dt>Spice</dt><dd>2.5/5</dd></div><div><dt>Cost</dt><dd>$2.84</dd></div><div><dt>Swap</dt><dd>Halal stock</dd></div></dl>
+              </article>
+              <article class="locale-card">
+                <h3>美国</h3>
+                <p>突出香辣甜平衡，配菜改为玉米和青葱，适配碗饭菜单。</p>
+                <dl><div><dt>Spice</dt><dd>2/5</dd></div><div><dt>Cost</dt><dd>$3.08</dd></div><div><dt>Swap</dt><dd>Low-sodium sauce</dd></div></dl>
+              </article>
+            </div>
+            <div class="stage-actions">
+              <button class="primary-button" type="button" data-action="advance-workflow" data-next-stage="final"><i data-lucide="badge-check" aria-hidden="true"></i><span data-stage-action="localizationNext">生成最终菜谱</span></button>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" data-view="final" aria-labelledby="final-title">
+          <div class="final-layout">
+            <section class="panel final-package" aria-labelledby="final-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker" data-final-kicker>最终菜谱</p>
+                  <h2 id="final-title">川味鸡肉饭最终菜谱</h2>
+                </div>
+                <span class="status-pill success" data-final-status>团队确认版</span>
+              </div>
+
+              <div class="final-summary">
+                <article>
+                  <span data-final-label="blueprint">机器人数据</span>
+                  <strong>V5 · 120 秒</strong>
+                  <p data-final-copy="blueprint">火力、投料、锅体动作和质检点已可用于门店打样。</p>
+                </article>
+                <article>
+                  <span data-final-label="version">实验版本</span>
+                  <strong data-final-version>V4 麻香后置</strong>
+                  <p data-final-copy="version">试吃评分 8.6，保留花椒香气并降低收尾油感。</p>
+                </article>
+                <article>
+                  <span data-final-label="market">市场适配</span>
+                  <strong data-final-market>中国 / 新加坡 / 美国</strong>
+                  <p data-final-copy="market">三地辣度、成本和替换食材已形成可执行差异。</p>
+                </article>
+              </div>
+
+              <div class="recipe-block">
+                <h3 data-final-section="handoff">交付内容</h3>
+                <ul class="handoff-list">
+                  <li><i data-lucide="bot" aria-hidden="true"></i><span data-handoff-item="robot">机器人执行参数：预热 180C，峰值 198C，批量上限 24 份。</span></li>
+                  <li><i data-lucide="clipboard-check" aria-hidden="true"></i><span data-handoff-item="qc">质检点：鸡肉焦香、花椒香保留、米饭颗粒感、批量风险。</span></li>
+                  <li><i data-lucide="globe-2" aria-hidden="true"></i><span data-handoff-item="market">区域版本：保留本地食材替换和辣度分层。</span></li>
+                </ul>
+              </div>
+
+              <div class="stage-actions">
+                <button class="primary-button" type="button" data-action="archive-project"><i data-lucide="archive" aria-hidden="true"></i><span data-final-action="archive">归档项目</span></button>
+              </div>
+            </section>
+
+            <aside class="panel expert-module" aria-labelledby="final-expert-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker" data-expert-kicker>高级功能</p>
+                  <h2 id="final-expert-title">专家审核</h2>
+                </div>
+                <span class="status-pill warning" data-expert-status>高级功能</span>
+              </div>
+              <p data-expert-copy>专家审核为高级功能。不开通也可以生成团队确认版并归档。</p>
+              <ul class="check-list expert-checks">
+                <li><span class="check-dot success"></span><strong data-expert-point="scopeTitle">审核范围可控</strong><small data-expert-point="scope">只共享最终机器人数据、实验版本和质检记录。</small></li>
+                <li><span class="check-dot warning"></span><strong data-expert-point="feedbackTitle">专家可反馈意见</strong><small data-expert-point="feedback">收到意见后，用户可返回修改并重新生成最终菜谱。</small></li>
+              </ul>
+              <div class="expert-actions">
+                <button class="secondary-button full" type="button" data-action="enable-premium"><i data-lucide="badge-dollar-sign" aria-hidden="true"></i><span data-expert-action="enable">开通高级功能</span></button>
+                <button class="primary-button full" type="button" data-action="invite-expert-review" hidden><i data-lucide="send" aria-hidden="true"></i><span data-expert-action="invite">邀请专家审核</span></button>
+                <button class="secondary-button full" type="button" data-action="receive-expert-feedback" hidden><i data-lucide="message-square-text" aria-hidden="true"></i><span data-expert-action="receive">模拟收到反馈</span></button>
+                <button class="primary-button full" type="button" data-action="apply-expert-feedback" hidden><i data-lucide="check-check" aria-hidden="true"></i><span data-expert-action="apply">采纳意见并更新最终菜谱</span></button>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" data-view="archive" aria-labelledby="archive-title">
+          <section class="panel archive-panel" aria-labelledby="archive-title">
+            <div class="panel-header">
+              <div>
+                <p class="section-kicker" data-archive-kicker>归档记录</p>
+                <h2 id="archive-title">已归档菜品项目</h2>
+              </div>
+              <span class="status-pill neutral" data-archive-status>未归档</span>
+            </div>
+            <div class="archive-empty" data-archive-empty>
+              <i data-lucide="archive" aria-hidden="true"></i>
+              <strong>还没有归档项目</strong>
+              <p>最终菜谱确认后，可以归档为只读记录。</p>
+            </div>
+            <div class="archive-list" data-archive-list></div>
+          </section>
+        </section>
+
+        <section class="view" data-view="recipe" aria-labelledby="recipe-title">
+          <section class="panel recipe-document" aria-labelledby="recipe-title">
+            <div class="recipe-document-header">
+              <div>
+                <p class="section-kicker" data-recipe-kicker>正式菜谱</p>
+                <h2 id="recipe-title">川味鸡肉饭</h2>
+                <p data-recipe-subtitle>归档后的只读菜谱格式，用于门店复现、专家回看和内部审计。</p>
+              </div>
+              <div class="recipe-doc-actions">
+                <span class="status-pill success" data-recipe-status>团队确认版</span>
+                <button class="secondary-button compact" type="button" data-view-target="archive"><i data-lucide="arrow-left" aria-hidden="true"></i><span data-recipe-back>返回归档</span></button>
+              </div>
+            </div>
+
+            <dl class="recipe-meta">
+              <div><dt data-recipe-meta-label="project">项目</dt><dd data-recipe-meta-value="project">川味鸡肉饭全球化研发</dd></div>
+              <div><dt data-recipe-meta-label="batch">批量</dt><dd data-recipe-meta-value="batch">24 份</dd></div>
+              <div><dt data-recipe-meta-label="cycle">单锅周期</dt><dd data-recipe-meta-value="cycle">120 秒</dd></div>
+              <div><dt data-recipe-meta-label="markets">适配市场</dt><dd data-recipe-meta-value="markets">中国 / 新加坡 / 美国</dd></div>
+            </dl>
+
+            <div class="recipe-section">
+              <h3 data-recipe-section="brief">菜品定义</h3>
+              <p data-recipe-brief>面向海外午餐高峰的川味鸡肉饭，保留花椒香气，提供微辣档，目标成本低于 3 美元。</p>
+            </div>
+
+            <div class="recipe-section">
+              <h3 data-recipe-section="ingredients">标准原料</h3>
+              <div class="recipe-table" role="table" aria-label="标准原料">
+                <div class="recipe-table-row recipe-table-head" role="row"><span role="columnheader">原料</span><span role="columnheader">用量</span><span role="columnheader">备注</span></div>
+                <div class="recipe-table-row" role="row"><span role="cell">鸡腿肉</span><span role="cell">220 g</span><span role="cell">预切配</span></div>
+                <div class="recipe-table-row" role="row"><span role="cell">复合酱料</span><span role="cell">36 g</span><span role="cell">低钠版本</span></div>
+                <div class="recipe-table-row" role="row"><span role="cell">高汤</span><span role="cell">42 ml</span><span role="cell">按市场替换</span></div>
+                <div class="recipe-table-row" role="row"><span role="cell">花椒香气油</span><span role="cell">8 ml</span><span role="cell">高温后加入</span></div>
+              </div>
+            </div>
+
+            <div class="recipe-section">
+              <h3 data-recipe-section="robot">机器人执行步骤</h3>
+              <div class="recipe-table robot-table" role="table" aria-label="机器人执行步骤">
+                <div class="recipe-table-row recipe-table-head" role="row"><span role="columnheader">阶段</span><span role="columnheader">温度</span><span role="columnheader">时间</span><span role="columnheader">动作</span></div>
+                <div class="recipe-table-row" role="row"><span role="cell">预热</span><span role="cell">180C</span><span role="cell">0-12s</span><span role="cell">空锅稳定</span></div>
+                <div class="recipe-table-row" role="row"><span role="cell">煎香</span><span role="cell">198C</span><span role="cell">12-54s</span><span role="cell">38 rpm 轻翻</span></div>
+                <div class="recipe-table-row" role="row"><span role="cell">收汁</span><span role="cell">158C</span><span role="cell">54-96s</span><span role="cell">22 rpm 混合</span></div>
+                <div class="recipe-table-row" role="row"><span role="cell">出锅</span><span role="cell">142C</span><span role="cell">96-120s</span><span role="cell">加入点缀</span></div>
+              </div>
+            </div>
+
+            <div class="recipe-section recipe-columns">
+              <div>
+                <h3 data-recipe-section="qc">质检点</h3>
+                <ul class="handoff-list">
+                  <li><i data-lucide="check" aria-hidden="true"></i><span data-recipe-qc="browning">42-48 秒出现鸡肉可见焦化边缘。</span></li>
+                  <li><i data-lucide="check" aria-hidden="true"></i><span data-recipe-qc="aroma">花椒油不进入高温段，保留香气。</span></li>
+                  <li><i data-lucide="check" aria-hidden="true"></i><span data-recipe-qc="batch">超过 24 份需重新测试点缀软化风险。</span></li>
+                </ul>
+              </div>
+              <div>
+                <h3 data-recipe-section="audit">归档审计</h3>
+                <ul class="handoff-list">
+                  <li><i data-lucide="lock-keyhole" aria-hidden="true"></i><span data-recipe-audit="readonly">归档后为只读记录。</span></li>
+                  <li><i data-lucide="user-check" aria-hidden="true"></i><span data-recipe-audit="owner">团队确认版由主厨确认。</span></li>
+                  <li><i data-lucide="history" aria-hidden="true"></i><span data-recipe-audit="source">保留 V4 实验版本和机器人数据来源。</span></li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" data-view="review" aria-labelledby="expert-title">
+          <div class="review-layout">
+            <section class="panel" aria-labelledby="expert-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker">专家审核室</p>
+                  <h2 id="expert-title">专家审核室</h2>
+                </div>
+                <span class="status-pill info" data-review-mode>内部研发</span>
+              </div>
+              <div class="review-summary" data-review-summary>
+                <span class="avatar large">IN</span>
+                <div>
+                  <strong>尚未开放专家协作</strong>
+                  <p>当前项目仅团队可见。确认机器人数据版本后，可邀请 Botinkit Taste Lab 或外部专家审核。</p>
+                </div>
+              </div>
+              <div class="decision-log">
+                <h3>可回溯记录</h3>
+                <ol>
+                  <li><strong>AI 提案</strong><span>已生成花椒油后置的 V4 机器人数据。</span></li>
+                  <li><strong>主厨确认</strong><span>已接受口感目标，并要求降低收尾油感。</span></li>
+                  <li><strong>专家待邀请</strong><span>尚未共享给外部专家。</span></li>
+                </ol>
+              </div>
+            </section>
+
+            <section class="panel" aria-labelledby="trust-title">
+              <div class="panel-header">
+                <div>
+                  <p class="section-kicker">信任控制</p>
+                  <h2 id="trust-title">隐私与协作</h2>
+                </div>
+              </div>
+              <ul class="check-list">
+                <li><span class="check-dot success"></span><strong>团队内可见</strong><small>客户菜谱、机器人数据和试吃记录仅保留在团队空间。</small></li>
+                <li><span class="check-dot success"></span><strong>专家需主动邀请</strong><small>Botinkit Taste Lab 不会默认访问项目。</small></li>
+                <li><span class="check-dot success"></span><strong>邀请前可确认范围</strong><small>可先选择共享机器人数据、实验版本和质检记录。</small></li>
+              </ul>
+              <div class="share-scope" aria-label="共享范围">
+                <h3>共享范围</h3>
+                <ul data-share-scope>
+                  <li><i data-lucide="check" aria-hidden="true"></i><span>共享 V4 机器人数据</span></li>
+                  <li><i data-lucide="check" aria-hidden="true"></i><span>共享实验版本与质检记录</span></li>
+                  <li><i data-lucide="lock-keyhole" aria-hidden="true"></i><span>原始客户菜谱保持私有</span></li>
+                </ul>
+              </div>
+              <button class="primary-button full" type="button" data-action="invite-reviewer"><i data-lucide="send" aria-hidden="true"></i><span>邀请专家审核</span></button>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" role="status" aria-live="polite" hidden></div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

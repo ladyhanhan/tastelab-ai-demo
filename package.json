@@ -1,0 +1,25 @@
+{
+  "name": "tastelab-ai-agent-opening",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "remotion studio src/index.ts --port=3000",
+    "still": "remotion still src/index.ts AiAgentOpening out/ai-agent-opening-frame150.png --frame=150 --scale=0.35",
+    "render": "remotion render src/index.ts AiAgentOpening out/ai-agent-opening.mp4"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^9.6.1",
+    "@remotion/cli": "latest",
+    "@remotion/three": "^4.0.484",
+    "react": "latest",
+    "react-dom": "latest",
+    "remotion": "latest",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@types/three": "^0.185.0",
+    "typescript": "latest"
+  }
+}

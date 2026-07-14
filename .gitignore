@@ -1,0 +1,12 @@
+node_modules/
+out/
+dist/
+.remotion/
+.npm-cache/
+*.log
+.DS_Store
+**/.DS_Store
+tmp/
+tastelab-ai-demo/
+*.zip
+.vercel/
