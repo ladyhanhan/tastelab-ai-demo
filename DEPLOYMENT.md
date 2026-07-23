@@ -15,12 +15,17 @@ Keep the source files in the repository:
 - `index.html`
 - `styles.css`
 - `app.js`
+- `api/`
+- `server/`
 - `assets/`
 - `OPPOSans/`
 - `docs/`
 - `.design/`
+- `package.json`
+- `package-lock.json`
 - `PRODUCT.md`
 - `DESIGN.md`
+- `PRD.md`
 
 Do not upload generated or temporary files:
 
@@ -43,11 +48,30 @@ When importing the GitHub repository into Vercel, use these settings:
 - Root Directory: repository root / 仓库根目录
 - Build Command: leave empty / 留空
 - Output Directory: leave empty / 留空
-- Install Command: leave empty if Vercel allows it / 如果 Vercel 允许，留空
+- Install Command: use Vercel default `npm install` / 使用 Vercel 默认的 `npm install`
 
-This site is a static prototype. The main entry file is `index.html`.
+The interface is served from `index.html`, while authentication and AI requests run through Vercel Functions in `api/`.
 
-这是一个静态原型网站，主入口文件是 `index.html`。
+界面入口为 `index.html`，登录会话和 AI 请求通过 `api/` 中的 Vercel Functions 运行。
+
+## Environment Variables / 环境变量
+
+Add the following variables in Vercel Project Settings → Environment Variables for Preview and Production:
+
+在 Vercel 项目设置 → Environment Variables 中，为 Preview 和 Production 添加以下变量：
+
+- `OPENAI_API_KEY`: a project-scoped OpenAI API key / OpenAI 项目级 API Key
+- `OPENAI_MODEL`: `gpt-5.6-terra`
+- `DEMO_ACCESS_CODE`: the shared code used on the demo login page / 演示登录页使用的共享口令
+- `SESSION_SECRET`: a random secret of at least 32 characters / 至少 32 位的随机会话密钥
+
+Never prefix these variables with `NEXT_PUBLIC_` or place real values in `app.js`, Git, or `.env.example`.
+
+不要给这些变量添加 `NEXT_PUBLIC_` 前缀，也不要把真实值写入 `app.js`、Git 或 `.env.example`。
+
+After changing an environment variable, redeploy the latest commit so the Functions receive the new configuration.
+
+修改环境变量后，需要重新部署最新提交，Vercel Functions 才会读取新配置。
 
 ## Update Flow / 更新流程
 
@@ -62,6 +86,6 @@ This site is a static prototype. The main entry file is `index.html`.
 
 ## Notes / 注意事项
 
-The current `package.json` is for the Remotion animation work, not for the static website. If Vercel tries to run a build, set the project framework to `Other` and clear the build command.
+The repository also contains Remotion dependencies, but Vercel should not run a Remotion build. Keep Framework Preset as `Other`; dependency installation is still required for the `openai` and `zod` server packages.
 
-当前 `package.json` 用于 Remotion 动画工作，不是静态网站构建脚本。如果 Vercel 尝试执行构建，请将项目框架设为 `Other`，并清空构建命令。
+仓库中仍包含 Remotion 依赖，但 Vercel 不应执行 Remotion 构建。Framework Preset 保持为 `Other`；同时必须安装依赖，供服务端使用 `openai` 与 `zod`。

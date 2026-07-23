@@ -10,3 +10,7 @@ tmp/
 tastelab-ai-demo/
 *.zip
 .vercel/
+.env
+.env.local
+.env.*.local
+!.env.example

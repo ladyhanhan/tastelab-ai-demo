@@ -1,16 +1,27 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Botinkit TasteLab AI</title>
     <link rel="icon" type="image/png" href="assets/favicon.png">
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem("tastelab-theme") === "dark" ? "dark" : "light";
+      } catch (error) {
+        document.documentElement.dataset.theme = "light";
+      }
+    </script>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body data-lang="zh">
     <a class="skip-link" href="#main-content">跳到工作区</a>
 
     <main class="login-page" data-login-page>
+      <button class="icon-button theme-toggle login-theme-toggle" type="button" data-action="toggle-theme" data-theme-toggle aria-label="切换到深色模式" aria-pressed="false" title="切换到深色模式">
+        <i data-lucide="moon" aria-hidden="true"></i>
+        <span class="sr-only" data-theme-label>切换到深色模式</span>
+      </button>
       <section class="login-card" aria-labelledby="login-title">
         <div class="login-brand-panel">
           <img class="brand-logo" src="assets/botinkit-logo-reverse.png" alt="BOTINKIT">
@@ -30,11 +41,21 @@
               <h2 id="login-title">登录 TasteLab AI</h2>
             </div>
           </div>
-          <p class="login-intro" data-login-intro>使用企业邮箱或手机号进入团队研发空间。</p>
+          <p class="login-intro" data-login-intro>输入共享演示口令，进入企业研发空间。</p>
           <form class="login-form">
-            <label><span data-login-label="email">企业邮箱 / 手机号</span><input type="text" value="hannah@botinkit.ai" autocomplete="username"></label>
-            <label><span data-login-label="password">密码或验证码</span><input type="password" value="123456" autocomplete="current-password"></label>
-            <label><span data-login-label="workspace">企业空间</span><select data-login-workspace><option>Botinkit 深圳研发空间</option><option>Botinkit Global Taste Lab</option></select></label>
+            <label><span data-login-label="password">演示访问口令</span><input data-login-access-code type="password" autocomplete="current-password" required></label>
+            <p class="field-help login-feedback" data-login-feedback aria-live="polite"></p>
+            <div class="brief-field select-field login-workspace-field" data-login-workspace-field>
+              <span data-login-label="workspace">企业空间</span>
+              <input data-login-workspace type="hidden" value="Botinkit 深圳研发空间">
+              <div class="choice-dropdown" data-login-workspace-dropdown>
+                <button class="market-select-trigger" type="button" data-action="toggle-login-workspace-menu" aria-haspopup="listbox" aria-expanded="false">
+                  <span data-login-workspace-summary>Botinkit 深圳研发空间</span>
+                  <i data-lucide="chevron-down" aria-hidden="true"></i>
+                </button>
+                <div class="market-menu choice-menu" data-login-workspace-options role="listbox" aria-label="企业空间选项" hidden></div>
+              </div>
+            </div>
             <div class="login-actions">
               <button class="primary-button full" type="submit"><i data-lucide="log-in" aria-hidden="true"></i><span data-login-action="submit">登录</span></button>
             </div>
@@ -123,6 +144,10 @@
             </div>
           </div>
           <div class="top-actions">
+            <button class="icon-button theme-toggle" type="button" data-action="toggle-theme" data-theme-toggle aria-label="切换到深色模式" aria-pressed="false" title="切换到深色模式">
+              <i data-lucide="moon" aria-hidden="true"></i>
+              <span class="sr-only" data-theme-label>切换到深色模式</span>
+            </button>
             <div class="language-switcher" role="group" aria-label="Language">
               <button class="language-option is-active" type="button" data-language="zh" aria-pressed="true">中文</button>
               <button class="language-option" type="button" data-language="en" aria-pressed="false">EN</button>
@@ -224,8 +249,28 @@
                   <section class="brief-section" aria-labelledby="brief-context-title">
                     <h3 id="brief-context-title" data-brief-section-title="context">研发上下文</h3>
                     <div class="input-grid brief-grid">
-                      <label><span data-brief-label="type">研发类型</span><select data-brief-control="type"></select></label>
-                      <label><span data-brief-label="scene">门店场景</span><select data-brief-control="scene"></select></label>
+                      <div class="brief-field select-field" data-select-field="type">
+                        <span data-brief-label="type">研发类型</span>
+                        <input data-brief-control="type" type="hidden">
+                        <div class="choice-dropdown" data-choice-dropdown="type">
+                          <button class="market-select-trigger is-placeholder" type="button" data-action="toggle-choice-menu" data-choice-key="type" aria-haspopup="listbox" aria-expanded="false">
+                            <span data-choice-summary="type">请选择</span>
+                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                          </button>
+                          <div class="market-menu choice-menu" data-choice-options="type" role="listbox" aria-label="研发类型选项" hidden></div>
+                        </div>
+                      </div>
+                      <div class="brief-field select-field" data-select-field="scene">
+                        <span data-brief-label="scene">门店场景</span>
+                        <input data-brief-control="scene" type="hidden">
+                        <div class="choice-dropdown" data-choice-dropdown="scene">
+                          <button class="market-select-trigger is-placeholder" type="button" data-action="toggle-choice-menu" data-choice-key="scene" aria-haspopup="listbox" aria-expanded="false">
+                            <span data-choice-summary="scene">请选择</span>
+                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                          </button>
+                          <div class="market-menu choice-menu" data-choice-options="scene" role="listbox" aria-label="门店场景选项" hidden></div>
+                        </div>
+                      </div>
                       <div class="brief-field market-field" data-market-field>
                         <span data-brief-label="markets">目标市场</span>
                         <input data-brief-control="markets" type="hidden">
@@ -237,17 +282,57 @@
                           <div class="market-menu" data-market-options role="listbox" aria-label="目标市场选项" hidden></div>
                         </div>
                       </div>
-                      <label><span data-brief-label="audience">目标客群</span><select data-brief-control="audience"></select></label>
+                      <div class="brief-field select-field" data-select-field="audience">
+                        <span data-brief-label="audience">目标客群</span>
+                        <input data-brief-control="audience" type="hidden">
+                        <div class="choice-dropdown" data-choice-dropdown="audience">
+                          <button class="market-select-trigger is-placeholder" type="button" data-action="toggle-choice-menu" data-choice-key="audience" aria-haspopup="listbox" aria-expanded="false">
+                            <span data-choice-summary="audience">请选择</span>
+                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                          </button>
+                          <div class="market-menu choice-menu" data-choice-options="audience" role="listbox" aria-label="目标客群选项" hidden></div>
+                        </div>
+                      </div>
                     </div>
                   </section>
 
                   <section class="brief-section" aria-labelledby="brief-position-title">
                     <h3 id="brief-position-title" data-brief-section-title="positioning">菜品定位</h3>
                     <div class="input-grid brief-grid">
-                      <label><span data-brief-label="protein">主蛋白</span><select data-brief-control="protein"></select></label>
+                      <div class="brief-field select-field" data-select-field="protein">
+                        <span data-brief-label="protein">主蛋白</span>
+                        <input data-brief-control="protein" type="hidden">
+                        <div class="choice-dropdown" data-choice-dropdown="protein">
+                          <button class="market-select-trigger is-placeholder" type="button" data-action="toggle-choice-menu" data-choice-key="protein" aria-haspopup="listbox" aria-expanded="false">
+                            <span data-choice-summary="protein">请选择</span>
+                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                          </button>
+                          <div class="market-menu choice-menu" data-choice-options="protein" role="listbox" aria-label="主蛋白选项" hidden></div>
+                        </div>
+                      </div>
                       <label><span data-brief-label="price">价格 / 成本</span><input data-brief-control="price" type="text" placeholder="例如：$8.90-$10.90 / 成本 $2.84"></label>
-                      <label><span data-brief-label="spice">口味目标</span><select data-brief-control="spice"></select></label>
-                      <label><span data-brief-label="aroma">感官目标</span><select data-brief-control="aroma"></select></label>
+                      <div class="brief-field select-field" data-select-field="spice">
+                        <span data-brief-label="spice">口味目标</span>
+                        <input data-brief-control="spice" type="hidden">
+                        <div class="choice-dropdown" data-choice-dropdown="spice">
+                          <button class="market-select-trigger is-placeholder" type="button" data-action="toggle-choice-menu" data-choice-key="spice" aria-haspopup="listbox" aria-expanded="false">
+                            <span data-choice-summary="spice">请选择</span>
+                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                          </button>
+                          <div class="market-menu choice-menu" data-choice-options="spice" role="listbox" aria-label="口味目标选项" hidden></div>
+                        </div>
+                      </div>
+                      <div class="brief-field select-field" data-select-field="aroma">
+                        <span data-brief-label="aroma">感官目标</span>
+                        <input data-brief-control="aroma" type="hidden">
+                        <div class="choice-dropdown" data-choice-dropdown="aroma">
+                          <button class="market-select-trigger is-placeholder" type="button" data-action="toggle-choice-menu" data-choice-key="aroma" aria-haspopup="listbox" aria-expanded="false">
+                            <span data-choice-summary="aroma">请选择</span>
+                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                          </button>
+                          <div class="market-menu choice-menu" data-choice-options="aroma" role="listbox" aria-label="感官目标选项" hidden></div>
+                        </div>
+                      </div>
                     </div>
                   </section>
 
@@ -256,8 +341,28 @@
                     <div class="input-grid brief-grid">
                       <label><span data-brief-label="constraints">限制条件</span><input data-brief-control="constraints" type="text" placeholder="例如：不含花生、微辣档、低钠酱汁"></label>
                       <label><span data-brief-label="batch">目标批量</span><input data-brief-control="batch" type="text" placeholder="例如：18-24 份"></label>
-                      <label><span data-brief-label="prep">预处理程度</span><select data-brief-control="prep"></select></label>
-                      <label><span data-brief-label="robot">机器人动作边界</span><select data-brief-control="robot"></select></label>
+                      <div class="brief-field select-field" data-select-field="prep">
+                        <span data-brief-label="prep">预处理程度</span>
+                        <input data-brief-control="prep" type="hidden">
+                        <div class="choice-dropdown" data-choice-dropdown="prep">
+                          <button class="market-select-trigger is-placeholder" type="button" data-action="toggle-choice-menu" data-choice-key="prep" aria-haspopup="listbox" aria-expanded="false">
+                            <span data-choice-summary="prep">请选择</span>
+                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                          </button>
+                          <div class="market-menu choice-menu" data-choice-options="prep" role="listbox" aria-label="预处理程度选项" hidden></div>
+                        </div>
+                      </div>
+                      <div class="brief-field select-field" data-select-field="robot">
+                        <span data-brief-label="robot">机器人动作边界</span>
+                        <input data-brief-control="robot" type="hidden">
+                        <div class="choice-dropdown" data-choice-dropdown="robot">
+                          <button class="market-select-trigger is-placeholder" type="button" data-action="toggle-choice-menu" data-choice-key="robot" aria-haspopup="listbox" aria-expanded="false">
+                            <span data-choice-summary="robot">请选择</span>
+                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                          </button>
+                          <div class="market-menu choice-menu" data-choice-options="robot" role="listbox" aria-label="机器人动作边界选项" hidden></div>
+                        </div>
+                      </div>
                     </div>
                   </section>
                 </div>
@@ -295,6 +400,9 @@
                   <div class="chip-row sensory-chip-row" data-sensory-keywords></div>
                 </section>
                 <div class="conflict-list" data-conflict-list></div>
+                <div class="stage-actions">
+                  <button class="primary-button" type="button" data-action="analyze-brief"><i data-lucide="scan-search" aria-hidden="true"></i><span>开始 AI 解析</span></button>
+                </div>
               </section>
 
               <section class="panel" aria-labelledby="robotize-title">
@@ -324,19 +432,21 @@
                   <p class="section-kicker">Robot executable data</p>
                   <h2 id="blueprint-title">机器人可执行数据</h2>
                 </div>
-                <span class="status-pill success" data-blueprint-state>V4 generated</span>
+                <span class="status-pill neutral" data-blueprint-state>等待生成</span>
               </div>
+              <div class="ai-safety-notice" role="note" data-robot-safety>
+                <i data-lucide="triangle-alert" aria-hidden="true"></i>
+                <div><strong>AI 演示草案</strong><span>参数不可直接下发设备，必须由 Botinkit 工程与厨务团队验证。</span></div>
+              </div>
+              <div class="ai-progress" data-ai-progress="robot_data_generate" hidden aria-live="polite"></div>
 
               <div class="blueprint-section temperature-schedule" role="img" aria-label="Segmented temperature schedule from preheat to finish">
                 <div class="section-subhead">
                   <h3 data-temperature-title>火力阶段</h3>
                   <p data-temperature-subtitle>温度按阶段锁定展示，不与锅体动作混在同一图中。</p>
                 </div>
-                <div class="stage-grid">
-                  <article class="temperature-stage"><span>0-12s</span><strong>180C</strong><small>预热</small></article>
-                  <article class="temperature-stage"><span>12-54s</span><strong>198C</strong><small>煎香</small></article>
-                  <article class="temperature-stage"><span>54-96s</span><strong>158C</strong><small>收汁</small></article>
-                  <article class="temperature-stage"><span>96-120s</span><strong>142C</strong><small>出锅</small></article>
+                <div class="stage-grid" data-temperature-stages>
+                  <p class="ai-empty">完成 Brief 后生成机器人数据。</p>
                 </div>
               </div>
 
@@ -344,36 +454,10 @@
                 <div class="section-subhead">
                   <h3 data-ingredient-title>投料节奏</h3>
                 </div>
-                <div class="schedule-table" role="table" aria-label="Ingredient timing schedule">
-                  <div class="schedule-row schedule-header" role="row">
-                    <span role="columnheader">时间</span>
-                    <span role="columnheader">投料</span>
-                    <span role="columnheader">用量</span>
-                  </div>
-                  <div class="schedule-row" role="row">
-                    <span role="cell">12s</span>
-                    <span role="cell">鸡腿肉</span>
-                    <span role="cell">220 g</span>
-                  </div>
-                  <div class="schedule-row" role="row">
-                    <span role="cell">54s</span>
-                    <span role="cell">酱料</span>
-                    <span role="cell">36 g</span>
-                  </div>
-                  <div class="schedule-row" role="row">
-                    <span role="cell">78s</span>
-                    <span role="cell">高汤</span>
-                    <span role="cell">42 ml</span>
-                  </div>
-                  <div class="schedule-row" role="row">
-                    <span role="cell">108s</span>
-                    <span role="cell">点缀</span>
-                    <span role="cell">8 g</span>
-                  </div>
-                </div>
+                <div class="schedule-table" role="table" aria-label="Ingredient timing schedule" data-ingredient-schedule></div>
               </div>
 
-              <div class="parameter-grid">
+              <div class="parameter-grid" data-parameter-grid>
                 <label>预热温度 <input type="range" min="160" max="210" value="180" data-range-output="preheat-value"><span id="preheat-value">180C</span></label>
                 <label>翻炒速度 <input type="range" min="18" max="48" value="38" data-range-output="speed-value"><span id="speed-value">38 rpm</span></label>
                 <label>酱料投放 <input type="range" min="35" max="90" value="62" data-range-output="sauce-value"><span id="sauce-value">62s</span></label>
@@ -392,11 +476,7 @@
                     <h2 id="action-title">锅体动作</h2>
                   </div>
                 </div>
-                <ol class="action-list">
-                  <li><strong>轻翻</strong><span>12-42s / 38 rpm / 鸡肉上色</span></li>
-                  <li><strong>混合</strong><span>54-78s / 22 rpm / 酱料均匀包裹</span></li>
-                  <li><strong>收汁</strong><span>78-104s / 16 rpm / 控制米饭颗粒感</span></li>
-                </ol>
+                <ol class="action-list" data-wok-actions></ol>
               </section>
 
               <section class="panel quality-panel" aria-labelledby="quality-title">
@@ -406,12 +486,8 @@
                     <h2 id="quality-title">质检点 / QC gates</h2>
                   </div>
                 </div>
-                <ul class="check-list">
-                  <li><span class="check-dot success"></span><strong>鸡肉边缘焦香</strong><small>Visible browning at 42-48 seconds</small></li>
-                  <li><span class="check-dot warning"></span><strong>花椒香气保留</strong><small>Oil added after high-heat stage</small></li>
-                  <li><span class="check-dot success"></span><strong>米饭颗粒感</strong><small>Hold sauce viscosity under 34 Brix</small></li>
-                  <li><span class="check-dot danger"></span><strong>高峰批量风险</strong><small>Above 24 portions may soften garnish</small></li>
-                </ul>
+                <ul class="check-list" data-quality-gates></ul>
+                <div class="ai-evidence" data-robot-evidence></div>
               </section>
             </div>
           </div>
@@ -426,22 +502,22 @@
                   <h2 id="versions-title">实验版本对比</h2>
                 </div>
               </div>
-              <div class="version-list" role="listbox" aria-label="Experiment versions">
-                <button class="version-row is-selected" type="button" data-version="V4">
-                  <span>V4</span>
-                  <strong>麻香后置 / Late pepper oil</strong>
-                  <small>Score 8.6, cost $2.84</small>
-                </button>
-                <button class="version-row" type="button" data-version="V3">
-                  <span>V3</span>
-                  <strong>酱料提前 / Early sauce</strong>
-                  <small>Score 7.9, cost $2.79</small>
-                </button>
-                <button class="version-row" type="button" data-version="V2">
-                  <span>V2</span>
-                  <strong>高火快炒 / High heat</strong>
-                  <small>Score 7.4, cost $2.92</small>
-                </button>
+              <div class="experiment-form" data-experiment-form>
+                <div class="input-grid experiment-metrics">
+                  <label><span data-experiment-label="score">试吃评分</span><input data-experiment-input="score" type="number" min="0" max="10" step="0.1" placeholder="0-10"></label>
+                  <label><span data-experiment-label="texture">质感</span><input data-experiment-input="texture" type="text" placeholder="例如：鸡肉外焦里嫩"></label>
+                  <label><span data-experiment-label="aroma">香气</span><input data-experiment-input="aroma" type="text" placeholder="例如：花椒香清晰"></label>
+                  <label><span data-experiment-label="stability">稳定性</span><input data-experiment-input="stability" type="text" placeholder="例如：24 份批量稳定"></label>
+                  <label><span data-experiment-label="cost">成本</span><input data-experiment-input="cost" type="text" placeholder="例如：$2.84"></label>
+                </div>
+                <label><span data-experiment-label="notes">实验备注</span><textarea data-experiment-input="notes" rows="5" placeholder="记录本轮参数调整、试吃反馈和异常。"></textarea></label>
+                <label class="photo-upload">
+                  <span data-experiment-label="photos">菜品照片，最多 3 张</span>
+                  <input data-experiment-photos type="file" accept="image/jpeg,image/png,image/webp" multiple>
+                </label>
+                <div class="photo-preview-grid" data-photo-previews></div>
+                <p class="field-help" data-photo-help>AI 仅比较颜色与形态，不判断食品安全、真实熟度或实际口感。</p>
+                <button class="primary-button" type="button" data-action="analyze-experiments"><i data-lucide="images" aria-hidden="true"></i><span>AI 对比实验</span></button>
               </div>
             </section>
 
@@ -449,20 +525,15 @@
               <div class="panel-header">
                 <div>
                   <p class="section-kicker">Selected version</p>
-                  <h2 id="version-detail-title" data-version-title>V4 麻香后置</h2>
+                  <h2 id="version-detail-title" data-version-title>等待实验分析</h2>
                 </div>
-                <span class="status-pill success" data-version-score>8.6 tasting score</span>
+                <span class="status-pill neutral" data-version-score>未分析</span>
               </div>
-              <div class="version-detail">
-                <img src="assets/sichuan-chicken-lab-preview.png" alt="Selected Sichuan chicken rice experiment">
-                <dl>
-                  <div><dt>主要变化 / Change</dt><dd data-version-change>花椒油后置，香气提升，辣度更稳定。</dd></div>
-                  <div><dt>审核记录 / Audit</dt><dd>AI draft -> Chef approved -> Expert pending</dd></div>
-                  <div><dt>下一步 / Next step</dt><dd>Run 24-portion batch in Singapore pilot store.</dd></div>
-                </dl>
-                <div class="stage-actions">
-                  <button class="primary-button" type="button" data-action="advance-workflow" data-next-stage="localization"><i data-lucide="check-check" aria-hidden="true"></i><span data-stage-action="versionsNext">确认版本</span></button>
-                </div>
+              <div class="version-detail" data-experiment-result>
+                <p class="ai-empty">录入本轮实验数据后，AI 将比较结果并提出下一轮建议。</p>
+              </div>
+              <div class="stage-actions">
+                <button class="primary-button" type="button" data-action="advance-workflow" data-next-stage="localization" disabled><i data-lucide="check-check" aria-hidden="true"></i><span data-stage-action="versionsNext">确认版本</span></button>
               </div>
             </section>
           </div>
@@ -475,27 +546,15 @@
                 <p class="section-kicker">Regional adaptation</p>
                 <h2 id="localization-title">多地区本地化变体</h2>
               </div>
-              <button class="secondary-button compact" type="button" data-action="compare-locales"><i data-lucide="refresh-cw" aria-hidden="true"></i><span>比较</span></button>
+              <button class="secondary-button compact" type="button" data-action="compare-locales"><i data-lucide="search" aria-hidden="true"></i><span>开始联网研究</span></button>
             </div>
-            <div class="locale-grid">
-              <article class="locale-card">
-                <h3>中国大陆</h3>
-                <p>保留中辣和豆瓣香，午餐套餐可加青笋丁。</p>
-                <dl><div><dt>辣度</dt><dd>3.5/5</dd></div><div><dt>成本</dt><dd>$2.42</dd></div><div><dt>替换</dt><dd>本地鸡腿肉</dd></div></dl>
-              </article>
-              <article class="locale-card">
-                <h3>新加坡</h3>
-                <p>辣度分层，增加微辣档，减少油感并保留花椒香。</p>
-                <dl><div><dt>Spice</dt><dd>2.5/5</dd></div><div><dt>Cost</dt><dd>$2.84</dd></div><div><dt>Swap</dt><dd>Halal stock</dd></div></dl>
-              </article>
-              <article class="locale-card">
-                <h3>美国</h3>
-                <p>突出香辣甜平衡，配菜改为玉米和青葱，适配碗饭菜单。</p>
-                <dl><div><dt>Spice</dt><dd>2/5</dd></div><div><dt>Cost</dt><dd>$3.08</dd></div><div><dt>Swap</dt><dd>Low-sodium sauce</dd></div></dl>
-              </article>
+            <div class="ai-progress" data-ai-progress="localization_research" hidden aria-live="polite"></div>
+            <div class="locale-grid" data-localization-results>
+              <p class="ai-empty">开始联网研究后，这里将展示来源事实、AI 推断和待人工验证项。</p>
             </div>
+            <div class="source-panel" data-localization-sources hidden></div>
             <div class="stage-actions">
-              <button class="primary-button" type="button" data-action="advance-workflow" data-next-stage="final"><i data-lucide="badge-check" aria-hidden="true"></i><span data-stage-action="localizationNext">生成最终菜谱</span></button>
+              <button class="primary-button" type="button" data-action="generate-final-recipe" disabled><i data-lucide="badge-check" aria-hidden="true"></i><span data-stage-action="localizationNext">生成最终菜谱</span></button>
             </div>
           </section>
         </section>
@@ -527,6 +586,9 @@
                   <strong data-final-market>中国 / 新加坡 / 美国</strong>
                   <p data-final-copy="market">三地辣度、成本和替换食材已形成可执行差异。</p>
                 </article>
+              </div>
+              <div class="formal-recipe-content" data-generated-final-recipe>
+                <p class="ai-empty">完成并确认前序阶段后生成正式菜谱。</p>
               </div>
 
               <div class="recipe-block">

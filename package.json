@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "remotion studio src/index.ts --port=3000",
+    "test": "node --test tests/*.test.mjs",
     "still": "remotion still src/index.ts AiAgentOpening out/ai-agent-opening-frame150.png --frame=150 --scale=0.35",
     "render": "remotion render src/index.ts AiAgentOpening out/ai-agent-opening.mp4"
   },
@@ -11,10 +12,12 @@
     "@react-three/fiber": "^9.6.1",
     "@remotion/cli": "latest",
     "@remotion/three": "^4.0.484",
+    "openai": "^6.48.0",
     "react": "latest",
     "react-dom": "latest",
     "remotion": "latest",
-    "three": "^0.185.1"
+    "three": "^0.185.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/react": "latest",

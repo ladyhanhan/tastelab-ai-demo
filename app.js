@@ -2,6 +2,7 @@ const views = Array.from(document.querySelectorAll("[data-view]"));
 const navButtons = Array.from(document.querySelectorAll("[data-view-target]"));
 const privacyButtons = Array.from(document.querySelectorAll("[data-privacy-mode]"));
 const languageButtons = Array.from(document.querySelectorAll("[data-language]"));
+const themeButtons = Array.from(document.querySelectorAll("[data-theme-toggle]"));
 const toast = document.querySelector(".toast");
 const dishForm = document.querySelector(".ai-form");
 const dishBrief = document.querySelector("#dish-brief");
@@ -30,11 +31,13 @@ const dishNameInput = document.querySelector("[data-dish-name]");
 const chefRecipeInput = document.querySelector("#chef-recipe");
 const robotizeButton = document.querySelector("[data-action='robotize']");
 
+const THEME_STORAGE_KEY = "tastelab-theme";
 const workflowOrder = ["dashboard", "ideation", "blueprint", "versions", "localization", "final"];
 const workflowStages = workflowOrder.filter((stage) => stage !== "dashboard");
 
 const state = {
   language: "zh",
+  theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   privacyMode: "private",
   selectedVersion: "V4",
   robotized: false,
@@ -53,6 +56,10 @@ const state = {
   briefAnalysisState: "empty",
   selectedNameSuggestion: null,
   marketMenuOpen: false,
+  openSelectKey: null,
+  loginWorkspaceMenuOpen: false,
+  loginState: "idle",
+  loginMessage: "",
   activeProjects: [],
   archivedProjects: [
     {
@@ -112,7 +119,7 @@ const state = {
 
 let saveFeedbackTimer = null;
 let saveFeedbackResetTimer = null;
-let briefAnalysisTimer = null;
+const activeAiRequests = new Map();
 
 const copy = {
   zh: {
@@ -170,6 +177,8 @@ const copy = {
       unsaved: "有未保存更改",
       stagePrefix: "当前阶段",
       login: "登录",
+      themeToDark: "切换到深色模式",
+      themeToLight: "切换到浅色模式",
       workspace: "Botinkit 深圳研发空间",
       accountUser: "Hannah Ma · 产品设计",
       accountMenuTitle: "企业账号",
@@ -737,6 +746,8 @@ const copy = {
       unsaved: "Unsaved changes",
       stagePrefix: "Current stage",
       login: "Login",
+      themeToDark: "Switch to dark mode",
+      themeToLight: "Switch to light mode",
       workspace: "Botinkit Shenzhen R&D",
       accountUser: "Hannah Ma · Product design",
       accountMenuTitle: "Enterprise account",
@@ -1251,6 +1262,267 @@ const copy = {
   }
 };
 
+const aiUi = {
+  zh: {
+    login: {
+      intro: "输入共享演示口令，进入企业研发空间。",
+      accessCode: "演示访问口令",
+      placeholder: "请输入演示访问口令",
+      checking: "正在验证",
+      invalid: "访问口令不正确，请重试。",
+      notConfigured: "演示访问尚未配置，请先在 Vercel 设置环境变量。",
+      network: "暂时无法连接演示服务，请检查网络后重试。"
+    },
+    actions: {
+      analyzeBrief: "开始 AI 解析",
+      analyzeAgain: "重新 AI 解析",
+      analyzingBrief: "AI 解析中",
+      standardize: "标准化步骤",
+      standardizing: "正在标准化",
+      generateRobot: "生成机器人数据",
+      generatingRobot: "正在生成机器人数据",
+      analyzeExperiment: "AI 对比实验",
+      analyzingExperiment: "正在分析实验",
+      research: "开始联网研究",
+      researching: "正在联网研究",
+      researchAgain: "重新联网研究",
+      generateFinal: "生成最终菜谱",
+      generatingFinal: "正在生成最终菜谱",
+      retry: "重试"
+    },
+    states: {
+      emptyAnalysis: "等待 AI 解析",
+      analyzed: "AI 已解析",
+      stale: "Brief 已更新，请重新解析",
+      missingConflict: (count) => `${count} 项冲突待确认`,
+      resolved: "已处理",
+      noConflict: "未发现待确认冲突。",
+      missing: "建议补充",
+      evidence: "输入依据",
+      confidence: "置信提示",
+      phasesRobot: ["正在校验约束", "正在生成执行阶段", "正在检查风险"],
+      phasesLocalization: ["正在检索目标市场", "正在核对来源", "正在形成适配建议"],
+      processing: "AI 正在处理",
+      completed: "AI 生成完成",
+      cancelled: "已取消",
+      translating: "正在翻译 AI 结果",
+      translationFailed: "目标语言版本生成失败，请重试切换语言。",
+      notReady: "请先完成必填项、执行 AI 解析并处理所有冲突。",
+      aiDraft: "AI 演示草案",
+      deviceWarning: "参数不可直接下发设备，必须由 Botinkit 工程与厨务团队验证。",
+      waitingRobot: "完成 Brief 后生成机器人数据。",
+      waitingExperiment: "录入本轮实验数据后，AI 将比较结果并提出下一轮建议。",
+      waitingLocalization: "开始联网研究后，这里将展示来源事实、AI 推断和待人工验证项。",
+      waitingFinal: "完成并确认前序阶段后生成正式菜谱。"
+    },
+    errors: {
+      AUTH_REQUIRED: "登录已失效，请重新输入演示口令。",
+      AI_NOT_CONFIGURED: "AI 服务尚未配置，请在 Vercel 设置 OPENAI_API_KEY。",
+      AI_KEY_INVALID: "OpenAI API Key 无效，请检查 Vercel 环境变量。",
+      AI_RATE_LIMITED: "AI 服务当前繁忙或额度受限，请稍后重试。",
+      REQUEST_THROTTLED: "操作太快，请稍后再试。",
+      PAYLOAD_TOO_LARGE: "图片请求超过 4MB，请减少照片或使用更小图片。",
+      AI_TIMEOUT: "AI 处理超时，请重试。",
+      AI_INVALID_OUTPUT: "AI 返回的数据未通过结构校验，请重试。",
+      AI_UPSTREAM_ERROR: "AI 服务暂时不可用，请稍后重试。",
+      AI_REQUEST_FAILED: "AI 请求失败，请重试。",
+      NETWORK_ERROR: "网络连接失败，请检查网络后重试。"
+    },
+    brief: {
+      detected: "AI 识别结果",
+      confirmed: "用户已确认",
+      sensory: "感官关键词",
+      conflicts: "需要主厨确认",
+      missing: "建议补充的问题",
+      warnings: "风险提示",
+      useOption: "选择此方案"
+    },
+    recipe: {
+      ingredients: "原料草案",
+      stages: "标准化阶段",
+      unresolved: "待确认项",
+      assumptions: "AI 假设"
+    },
+    robot: {
+      generated: "AI 草案就绪",
+      time: "时间",
+      ingredient: "投料",
+      amount: "用量",
+      risks: "风险",
+      assumptions: "AI 假设",
+      basis: "参数依据"
+    },
+    experiment: {
+      score: "试吃评分",
+      texture: "质感",
+      aroma: "香气",
+      stability: "稳定性",
+      cost: "成本",
+      notes: "实验备注",
+      photos: "菜品照片，最多 3 张",
+      photoHelp: "AI 仅比较颜色与形态，不判断食品安全、真实熟度或实际口感。",
+      resultTitle: "AI 实验比较",
+      recommendation: "推荐结论",
+      visual: "视觉观察",
+      tradeoffs: "权衡",
+      next: "下一轮建议",
+      limitations: "能力边界",
+      noInput: "请至少填写一项实验记录后再分析。",
+      photoLimit: "最多上传 3 张照片，压缩前总大小不能超过 10MB。"
+    },
+    localization: {
+      facts: "来源事实",
+      publicationDate: "发布日期",
+      inference: "AI 推断",
+      validation: "待人工验证",
+      taste: "口味调整",
+      substitutions: "食材替换",
+      cost: "成本假设",
+      execution: "机器人执行影响",
+      sharedCore: "不可改变的菜品核心",
+      sources: "研究来源"
+    },
+    final: {
+      ingredients: "原料",
+      steps: "执行步骤",
+      qc: "质检点",
+      assumptions: "AI 假设",
+      warnings: "未解决风险",
+      audit: "版本与审计记录",
+      teamDraft: "团队确认草案"
+    }
+  },
+  en: {
+    login: {
+      intro: "Enter the shared demo access code to open the enterprise R&D workspace.",
+      accessCode: "Demo access code",
+      placeholder: "Enter demo access code",
+      checking: "Checking",
+      invalid: "The access code is incorrect. Try again.",
+      notConfigured: "Demo access is not configured. Add the Vercel environment variables first.",
+      network: "The demo service cannot be reached. Check the network and retry."
+    },
+    actions: {
+      analyzeBrief: "Analyze with AI",
+      analyzeAgain: "Analyze again",
+      analyzingBrief: "Analyzing",
+      standardize: "Standardize steps",
+      standardizing: "Standardizing",
+      generateRobot: "Generate robot data",
+      generatingRobot: "Generating robot data",
+      analyzeExperiment: "Compare experiment",
+      analyzingExperiment: "Analyzing experiment",
+      research: "Start web research",
+      researching: "Researching",
+      researchAgain: "Research again",
+      generateFinal: "Generate final recipe",
+      generatingFinal: "Generating final recipe",
+      retry: "Retry"
+    },
+    states: {
+      emptyAnalysis: "Waiting for AI analysis",
+      analyzed: "AI analysis ready",
+      stale: "Brief changed. Analyze again",
+      missingConflict: (count) => `${count} conflict${count === 1 ? "" : "s"} to confirm`,
+      resolved: "Resolved",
+      noConflict: "No conflicts require confirmation.",
+      missing: "Suggested questions",
+      evidence: "Input evidence",
+      confidence: "Confidence",
+      phasesRobot: ["Validating constraints", "Generating execution stages", "Checking risks"],
+      phasesLocalization: ["Searching target markets", "Checking sources", "Building adaptation proposals"],
+      processing: "AI is processing",
+      completed: "AI generation complete",
+      cancelled: "Cancelled",
+      translating: "Translating AI result",
+      translationFailed: "The target-language result failed. Switch language again to retry.",
+      notReady: "Complete the required fields, run AI analysis, and resolve every conflict first.",
+      aiDraft: "AI demo draft",
+      deviceWarning: "Parameters cannot be sent to equipment. Botinkit engineering and culinary teams must validate them.",
+      waitingRobot: "Complete the Brief to generate robot data.",
+      waitingExperiment: "Enter experiment records for AI comparison and next-round recommendations.",
+      waitingLocalization: "Start web research to see sourced facts, AI inferences, and validation items.",
+      waitingFinal: "Complete and confirm the preceding stages to generate a formal recipe."
+    },
+    errors: {
+      AUTH_REQUIRED: "Your session expired. Enter the demo access code again.",
+      AI_NOT_CONFIGURED: "AI is not configured. Add OPENAI_API_KEY in Vercel.",
+      AI_KEY_INVALID: "The OpenAI API key is invalid. Check the Vercel environment variable.",
+      AI_RATE_LIMITED: "The AI service is busy or quota-limited. Retry shortly.",
+      REQUEST_THROTTLED: "That was too fast. Wait briefly and retry.",
+      PAYLOAD_TOO_LARGE: "The photo request exceeds 4MB. Remove photos or use smaller files.",
+      AI_TIMEOUT: "The AI request timed out. Retry.",
+      AI_INVALID_OUTPUT: "The AI response did not pass schema validation. Retry.",
+      AI_UPSTREAM_ERROR: "The AI service is temporarily unavailable. Retry later.",
+      AI_REQUEST_FAILED: "The AI request failed. Retry.",
+      NETWORK_ERROR: "Network request failed. Check the connection and retry."
+    },
+    brief: {
+      detected: "AI-recognized facts",
+      confirmed: "User-confirmed fields",
+      sensory: "Sensory keywords",
+      conflicts: "Chef confirmation needed",
+      missing: "Suggested questions",
+      warnings: "Risk notes",
+      useOption: "Choose this option"
+    },
+    recipe: {
+      ingredients: "Ingredient draft",
+      stages: "Standardized stages",
+      unresolved: "Items to confirm",
+      assumptions: "AI assumptions"
+    },
+    robot: {
+      generated: "AI draft ready",
+      time: "Time",
+      ingredient: "Ingredient",
+      amount: "Amount",
+      risks: "Risks",
+      assumptions: "AI assumptions",
+      basis: "Parameter basis"
+    },
+    experiment: {
+      score: "Tasting score",
+      texture: "Texture",
+      aroma: "Aroma",
+      stability: "Stability",
+      cost: "Cost",
+      notes: "Experiment notes",
+      photos: "Dish photos, up to 3",
+      photoHelp: "AI compares color and form only. It does not judge food safety, actual doneness, or real taste.",
+      resultTitle: "AI experiment comparison",
+      recommendation: "Recommendation",
+      visual: "Visual observations",
+      tradeoffs: "Tradeoffs",
+      next: "Next experiment",
+      limitations: "Capability limits",
+      noInput: "Enter at least one experiment record before analysis.",
+      photoLimit: "Upload up to 3 photos, with no more than 10MB total before compression."
+    },
+    localization: {
+      facts: "Sourced facts",
+      publicationDate: "Published",
+      inference: "AI inferences",
+      validation: "Human validation needed",
+      taste: "Taste adjustments",
+      substitutions: "Ingredient substitutions",
+      cost: "Cost assumption",
+      execution: "Robot execution impact",
+      sharedCore: "Dish core that must not change",
+      sources: "Research sources"
+    },
+    final: {
+      ingredients: "Ingredients",
+      steps: "Execution steps",
+      qc: "Quality gates",
+      assumptions: "AI assumptions",
+      warnings: "Unresolved warnings",
+      audit: "Version and audit trail",
+      teamDraft: "Team-confirmed draft"
+    }
+  }
+};
+
 function text(selector, value) {
   const element = document.querySelector(selector);
   if (element) {
@@ -1278,14 +1550,80 @@ function renderIcons() {
   }
 }
 
+function applyTheme({ persist = false } = {}) {
+  const isDark = state.theme === "dark";
+  const label = isDark ? currentCopy().top.themeToLight : currentCopy().top.themeToDark;
+
+  document.documentElement.dataset.theme = state.theme;
+  themeButtons.forEach((button) => {
+    button.setAttribute("aria-label", label);
+    button.setAttribute("aria-pressed", String(isDark));
+    button.setAttribute("title", label);
+    button.classList.toggle("is-dark", isDark);
+    button.innerHTML = `<i data-lucide="${isDark ? "sun" : "moon"}" aria-hidden="true"></i><span class="sr-only" data-theme-label>${label}</span>`;
+  });
+
+  if (persist) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, state.theme);
+    } catch (error) {
+      // Theme switching still works when storage is unavailable.
+    }
+  }
+
+  renderIcons();
+}
+
+function toggleTheme() {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  applyTheme({ persist: true });
+}
+
 function setButtonContent(button, iconName, label) {
   if (!button) return;
-  button.innerHTML = `<i data-lucide="${iconName}" aria-hidden="true"></i><span>${label}</span>`;
-  renderIcons();
+  const labelNode = button.querySelector("span");
+  const iconNode = button.querySelector("i");
+  if (labelNode) {
+    labelNode.textContent = label;
+  } else {
+    button.append(document.createElement("span"));
+    button.lastElementChild.textContent = label;
+  }
+  if (iconNode) {
+    iconNode.dataset.lucide = iconName;
+    renderIcons();
+  }
+  button.dataset.icon = iconName;
 }
 
 function currentCopy() {
   return copy[state.language];
+}
+
+function currentAiCopy() {
+  return aiUi[state.language];
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function safeExternalUrl(value) {
+  try {
+    const url = new URL(String(value));
+    return ["https:", "http:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function localeCode() {
+  return state.language === "zh" ? "zh-CN" : "en";
 }
 
 function localizeProject(project) {
@@ -1294,6 +1632,167 @@ function localizeProject(project) {
 
 function getActiveProject() {
   return state.activeProjects.find((project) => project.id === state.activeProjectId) || null;
+}
+
+function blankAiState() {
+  return {
+    briefAnalysis: null,
+    standardizedRecipe: null,
+    robotData: null,
+    experimentComparison: null,
+    localizationResearch: null,
+    finalRecipe: null,
+    experiment: {
+      score: "",
+      texture: "",
+      aroma: "",
+      stability: "",
+      cost: "",
+      notes: ""
+    },
+    photos: [],
+    translations: {},
+    conflictResolutions: {},
+    briefInputSignature: "",
+    errors: {}
+  };
+}
+
+function ensureProjectAi(project = getActiveProject()) {
+  if (!project) return blankAiState();
+  project.ai = { ...blankAiState(), ...(project.ai || {}) };
+  project.ai.experiment = {
+    ...blankAiState().experiment,
+    ...(project.ai.experiment || {})
+  };
+  project.ai.translations = project.ai.translations || {};
+  project.ai.conflictResolutions = project.ai.conflictResolutions || {};
+  project.ai.errors = project.ai.errors || {};
+  return project.ai;
+}
+
+function taskStateKey(task) {
+  return {
+    brief_analyze: "briefAnalysis",
+    recipe_standardize: "standardizedRecipe",
+    robot_data_generate: "robotData",
+    experiment_compare: "experimentComparison",
+    localization_research: "localizationResearch",
+    final_recipe_generate: "finalRecipe"
+  }[task] || task;
+}
+
+function getAiResult(task, project = getActiveProject()) {
+  if (!project) return null;
+  const ai = ensureProjectAi(project);
+  const original = ai[taskStateKey(task)];
+  if (!original) return null;
+  if (original.locale === localeCode()) return original;
+  return ai.translations?.[`${task}:${localeCode()}`] || null;
+}
+
+function setAiResult(task, response, project = getActiveProject()) {
+  if (!project) return;
+  const ai = ensureProjectAi(project);
+  ai[taskStateKey(task)] = {
+    locale: response.locale,
+    data: response.data,
+    citations: response.citations || [],
+    warnings: response.warnings || [],
+    requestId: response.requestId,
+    generatedAt: response.generatedAt,
+    model: response.model
+  };
+  ai.errors[task] = "";
+}
+
+function aiErrorMessage(error) {
+  const code = error?.code || "NETWORK_ERROR";
+  return currentAiCopy().errors[code] || error?.message || currentAiCopy().errors.AI_REQUEST_FAILED;
+}
+
+function setAiProgress(task, status, message = "") {
+  const progress = document.querySelector(`[data-ai-progress="${task}"]`);
+  if (!progress) return;
+  progress.hidden = status === "idle";
+  progress.className = `ai-progress is-${status}`;
+  progress.textContent = message;
+}
+
+async function requestAi(task, payload, { button, loadingLabel, phases = [] } = {}) {
+  const project = getActiveProject();
+  if (!project) {
+    throw Object.assign(new Error(currentCopy().toasts.noActiveProject), { code: "NO_PROJECT" });
+  }
+
+  activeAiRequests.get(task)?.abort();
+  const controller = new AbortController();
+  activeAiRequests.set(task, controller);
+  let phaseTimer = null;
+  let phaseIndex = 0;
+  const previousHtml = button?.innerHTML;
+
+  if (button) {
+    button.disabled = true;
+    button.classList.add("is-loading");
+    setButtonContent(button, "loader-circle", loadingLabel || currentAiCopy().states.processing);
+  }
+  if (phases.length) {
+    setAiProgress(task, "loading", phases[0]);
+    phaseTimer = window.setInterval(() => {
+      phaseIndex = Math.min(phaseIndex + 1, phases.length - 1);
+      setAiProgress(task, "loading", phases[phaseIndex]);
+    }, 1600);
+  }
+
+  try {
+    const response = await fetch("/api/ai", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        task,
+        locale: localeCode(),
+        projectId: project.id,
+        payload
+      }),
+      signal: controller.signal
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(result?.error?.message || "AI request failed");
+      error.code = result?.error?.code || "AI_REQUEST_FAILED";
+      error.status = response.status;
+      throw error;
+    }
+    setAiResult(task, result, project);
+    setAiProgress(task, "success", currentAiCopy().states.completed);
+    return result;
+  } catch (error) {
+    if (error.name === "AbortError") {
+      setAiProgress(task, "cancelled", currentAiCopy().states.cancelled);
+      throw Object.assign(error, { code: "CANCELLED" });
+    }
+    const normalized = error instanceof TypeError
+      ? Object.assign(error, { code: "NETWORK_ERROR" })
+      : error;
+    if (normalized.code === "AUTH_REQUIRED") {
+      state.authState = "signedOut";
+      renderAuth();
+    }
+    ensureProjectAi(project).errors[task] = aiErrorMessage(normalized);
+    setAiProgress(task, "error", aiErrorMessage(normalized));
+    throw normalized;
+  } finally {
+    window.clearInterval(phaseTimer);
+    activeAiRequests.delete(task);
+    if (button) {
+      button.disabled = false;
+      button.classList.remove("is-loading");
+      if (previousHtml) button.innerHTML = previousHtml;
+      renderIcons();
+    }
+  }
 }
 
 function hasActiveProject() {
@@ -1428,7 +1927,6 @@ function resetBriefInteractionState() {
   state.briefResolvedConflicts = [];
   state.briefAnalysisState = "empty";
   state.selectedNameSuggestion = null;
-  window.clearTimeout(briefAnalysisTimer);
 }
 
 function versionLabel(project) {
@@ -1452,6 +1950,7 @@ function createDraftProject() {
     progress: 8,
     versionStatus: "team",
     form: blankBriefForm(),
+    ai: blankAiState(),
     zh: {
       projectName: "未命名菜品研发项目",
       dishName: "待命名菜品",
@@ -1490,13 +1989,16 @@ function archiveCurrentProject() {
   const project = getActiveProject();
   if (!project) return null;
   syncActiveProjectFromForm();
+  const robotData = ensureProjectAi(project).robotData?.data;
+  const localization = ensureProjectAi(project).localizationResearch?.data;
+  const markets = localization?.variants?.map((item) => item.market) || [];
   project.versionStatus = state.expertReviewStatus === "applied" ? "expert" : "team";
   ["zh", "en"].forEach((lang) => {
     project[lang].archivedAt = lang === "zh" ? "今天" : "Today";
-    project[lang].batch = lang === "zh" ? "24 份" : "24 portions";
-    project[lang].cycle = lang === "zh" ? "120 秒" : "120 seconds";
-    project[lang].markets = lang === "zh" ? "中国 / 新加坡 / 美国" : "China / Singapore / United States";
-    project[lang].marketCount = lang === "zh" ? "3 个" : "3";
+    project[lang].batch = robotData?.batchRange || (lang === "zh" ? "待确认" : "To confirm");
+    project[lang].cycle = robotData ? `${robotData.totalDurationSeconds} ${lang === "zh" ? "秒" : "seconds"}` : "—";
+    project[lang].markets = markets.join(" / ") || "—";
+    project[lang].marketCount = lang === "zh" ? `${markets.length} 个` : String(markets.length);
     project[lang].brief = dishBrief?.value.trim() || project[lang].summary;
   });
   state.archivedProjects.unshift(project);
@@ -1707,24 +2209,109 @@ function renderAuth() {
   }
 }
 
+async function checkSession() {
+  try {
+    const response = await fetch("/api/session", {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { accept: "application/json" }
+    });
+    const result = await response.json().catch(() => ({}));
+    if (response.ok && result.authenticated) {
+      state.authState = "signedIn";
+      state.currentWorkspace = result.workspace || state.currentWorkspace;
+    } else {
+      state.authState = "signedOut";
+      if (response.status === 503) {
+        state.loginMessage = currentAiCopy().login.notConfigured;
+      }
+    }
+  } catch {
+    state.authState = "signedOut";
+    state.loginMessage = currentAiCopy().login.network;
+  }
+  renderAuth();
+  renderLoginPanel();
+  renderWorkflow();
+  renderTopState();
+}
+
+async function signOutSession() {
+  activeAiRequests.forEach((controller) => controller.abort());
+  activeAiRequests.clear();
+  try {
+    await fetch("/api/session", {
+      method: "DELETE",
+      credentials: "same-origin"
+    });
+  } finally {
+    state.authState = "signedOut";
+    state.activeProjects = [];
+    state.activeProjectId = null;
+    state.projectStage = "dashboard";
+    renderAuth();
+    renderProjectCenter();
+    renderWorkflow();
+  }
+}
+
+function renderLoginWorkspaceOptions() {
+  const c = currentCopy();
+  const control = document.querySelector("[data-login-workspace]");
+  const trigger = document.querySelector("[data-action='toggle-login-workspace-menu']");
+  const summary = document.querySelector("[data-login-workspace-summary]");
+  const options = document.querySelector("[data-login-workspace-options]");
+  const workspace = state.currentWorkspace || c.login.workspaces[0];
+
+  if (control) control.value = workspace;
+  if (summary) summary.textContent = workspace;
+  if (trigger) {
+    trigger.setAttribute("aria-expanded", String(state.loginWorkspaceMenuOpen));
+  }
+  if (!options) return;
+  options.hidden = !state.loginWorkspaceMenuOpen;
+  options.setAttribute("aria-label", state.language === "zh" ? "企业空间选项" : "Enterprise workspace options");
+  options.innerHTML = c.login.workspaces
+    .map((item) => {
+      const isSelected = item === workspace;
+      return `
+        <button class="${isSelected ? "is-selected" : ""}" type="button" data-action="select-login-workspace" data-workspace="${item}" aria-pressed="${isSelected}">
+          <span>${item}</span>
+          ${isSelected ? `<i data-lucide="check" aria-hidden="true"></i>` : ""}
+        </button>
+      `;
+    })
+    .join("");
+  renderIcons();
+}
+
 function renderLoginPanel() {
   const c = currentCopy();
+  const ui = currentAiCopy();
   text("[data-login-kicker]", c.login.kicker);
   text("#login-title", c.login.title);
-  text("[data-login-intro]", c.login.intro);
+  text("[data-login-intro]", ui.login.intro);
   text("[data-login-hero-title]", c.login.heroTitle);
   text("[data-login-hero-copy]", c.login.heroCopy);
   text("[data-login-proof='workspace']", c.login.proof.workspace);
   text("[data-login-proof='privacy']", c.login.proof.privacy);
   text("[data-login-proof='archive']", c.login.proof.archive);
-  text("[data-login-label='email']", c.login.labels.email);
-  text("[data-login-label='password']", c.login.labels.password);
+  text("[data-login-label='password']", ui.login.accessCode);
   text("[data-login-label='workspace']", c.login.labels.workspace);
-  text("[data-login-action='submit']", c.login.submit);
-  const workspaceSelect = document.querySelector("[data-login-workspace]");
-  if (workspaceSelect) {
-    workspaceSelect.innerHTML = c.login.workspaces.map((item) => `<option>${item}</option>`).join("");
+  text("[data-login-action='submit']", state.loginState === "loading" ? ui.login.checking : c.login.submit);
+  const accessCode = document.querySelector("[data-login-access-code]");
+  if (accessCode) accessCode.placeholder = ui.login.placeholder;
+  const feedback = document.querySelector("[data-login-feedback]");
+  if (feedback) {
+    feedback.textContent = state.loginMessage;
+    feedback.classList.toggle("is-error", Boolean(state.loginMessage));
   }
+  const submit = loginForm?.querySelector("[type='submit']");
+  if (submit) {
+    submit.disabled = state.loginState === "loading";
+    submit.classList.toggle("is-loading", state.loginState === "loading");
+  }
+  renderLoginWorkspaceOptions();
 }
 
 function renderProjectNaming() {
@@ -1747,10 +2334,13 @@ function renderProjectNaming() {
   }
   const suggestions = document.querySelector("[data-ai-name-suggestions]");
   if (suggestions) {
-    suggestions.innerHTML = c.projectNaming.suggestions
+    const aiSuggestions = getAiResult("brief_analyze")?.data?.nameSuggestions;
+    const availableSuggestions = aiSuggestions?.length ? aiSuggestions : [];
+    suggestions.hidden = availableSuggestions.length === 0;
+    suggestions.innerHTML = availableSuggestions
       .map((item) => `
         <button class="${state.selectedNameSuggestion === item ? "is-selected" : ""}" type="button" data-action="apply-name-suggestion" data-suggestion="${item}">
-          ${item}
+          ${escapeHtml(item)}
         </button>
       `)
       .join("");
@@ -1928,24 +2518,44 @@ function renderExpertModule() {
 
 function renderFinalRecipe() {
   const c = currentCopy();
+  const ui = currentAiCopy();
   const isExpertVersion = state.expertReviewStatus === "applied";
+  const result = getAiResult("final_recipe_generate");
+  const data = result?.data;
+  const content = document.querySelector("[data-generated-final-recipe]");
+  const archiveButton = document.querySelector("[data-action='archive-project']");
+  const robotData = getAiResult("robot_data_generate")?.data;
+  const experiment = getAiResult("experiment_compare")?.data;
+  const localization = getAiResult("localization_research")?.data;
 
   text("[data-final-kicker]", c.finalRecipe.kicker);
-  text("#final-title", c.finalRecipe.title);
-  text("[data-final-status]", isExpertVersion ? c.finalRecipe.statusExpert : c.finalRecipe.statusTeam);
+  text("#final-title", data?.title || c.finalRecipe.title);
+  text("[data-final-status]", isExpertVersion ? c.finalRecipe.statusExpert : data ? ui.final.teamDraft : c.finalRecipe.statusTeam);
   text("[data-final-label='blueprint']", c.finalRecipe.labels.blueprint);
   text("[data-final-label='version']", c.finalRecipe.labels.version);
   text("[data-final-label='market']", c.finalRecipe.labels.market);
-  text("[data-final-version]", c.versions.details[state.selectedVersion][0]);
-  text("[data-final-copy='blueprint']", c.finalRecipe.copies.blueprint);
-  text("[data-final-copy='version']", c.finalRecipe.copies.version);
-  text("[data-final-copy='market']", c.finalRecipe.copies.market);
-  text("[data-final-market]", c.finalRecipe.market);
+  text(".final-summary article:nth-child(1) strong", robotData ? `${robotData.version} · ${robotData.totalDurationSeconds}s` : "—");
+  text("[data-final-version]", experiment?.comparedVersions?.[0]?.id || "—");
+  text("[data-final-copy='blueprint']", data?.robotSummary || c.finalRecipe.copies.blueprint);
+  text("[data-final-copy='version']", data?.experimentSummary || c.finalRecipe.copies.version);
+  text("[data-final-copy='market']", data?.marketSummary || c.finalRecipe.copies.market);
+  text("[data-final-market]", localization?.variants?.map((item) => item.market).join(" / ") || "—");
   text("[data-final-section='handoff']", c.finalRecipe.handoff);
-  text("[data-handoff-item='robot']", c.finalRecipe.handoffItems.robot);
-  text("[data-handoff-item='qc']", c.finalRecipe.handoffItems.qc);
-  text("[data-handoff-item='market']", c.finalRecipe.handoffItems.market);
+  text("[data-handoff-item='robot']", data?.robotSummary || c.finalRecipe.handoffItems.robot);
+  text("[data-handoff-item='qc']", data?.qualityGates?.join(" · ") || c.finalRecipe.handoffItems.qc);
+  text("[data-handoff-item='market']", data?.marketSummary || c.finalRecipe.handoffItems.market);
   text("[data-final-action='archive']", c.finalRecipe.archive);
+  if (content) {
+    content.innerHTML = data ? `
+      <section><h3>${escapeHtml(ui.final.ingredients)}</h3><dl class="recipe-ingredient-list">${data.ingredients.map((item) => `<div><dt>${escapeHtml(item.name)}</dt><dd>${escapeHtml(item.amount)}${item.note ? ` · ${escapeHtml(item.note)}` : ""}</dd></div>`).join("")}</dl></section>
+      <section><h3>${escapeHtml(ui.final.steps)}</h3><ol>${data.steps.map((step) => `<li><strong>${escapeHtml(step.stage)}</strong><span>${escapeHtml([step.temperatureC === null ? "" : `${step.temperatureC}C`, step.timeRange, step.action].filter(Boolean).join(" · "))}</span></li>`).join("")}</ol></section>
+      <section><h3>${escapeHtml(ui.final.qc)}</h3><ul>${data.qualityGates.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>
+      <section class="is-warning"><h3>${escapeHtml(ui.final.assumptions)}</h3><ul>${data.assumptions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>
+      ${data.unresolvedWarnings.length ? `<section class="is-warning"><h3>${escapeHtml(ui.final.warnings)}</h3><ul>${data.unresolvedWarnings.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
+      <section><h3>${escapeHtml(ui.final.audit)}</h3><ol>${data.auditTrail.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol></section>
+    ` : `<p class="ai-empty">${escapeHtml(ui.states.waitingFinal)}</p>`;
+  }
+  if (archiveButton) archiveButton.disabled = !data;
   renderExpertModule();
 }
 
@@ -1974,6 +2584,11 @@ function renderFormalRecipe() {
   const recipe = c.formalRecipe;
   const archiveProject = getSelectedArchiveProject();
   const project = archiveProject ? localizeProject(archiveProject) : null;
+  const archivedAi = archiveProject ? ensureProjectAi(archiveProject) : null;
+  const originalFinal = archivedAi?.finalRecipe;
+  const generated = originalFinal?.locale === localeCode()
+    ? originalFinal
+    : archivedAi?.translations?.[`final_recipe_generate:${localeCode()}`] || null;
 
   text("[data-recipe-kicker]", recipe.kicker);
   text("#recipe-title", project?.dishName || recipe.title);
@@ -1999,16 +2614,33 @@ function renderFormalRecipe() {
   });
   text("[data-recipe-brief]", project?.brief || recipe.brief);
 
-  const ingredientRows = document.querySelectorAll("[data-view='recipe'] .recipe-table:not(.robot-table) .recipe-table-row");
-  ingredientRows.forEach((row, index) => {
+  const ingredientTable = document.querySelector("[data-view='recipe'] .recipe-table:not(.robot-table)");
+  const robotTable = document.querySelector("[data-view='recipe'] .robot-table");
+  if (generated && ingredientTable && robotTable) {
+    ingredientTable.innerHTML = `
+      <div class="recipe-table-row recipe-table-head" role="row">${recipe.ingredientsHeaders.map((item) => `<span role="columnheader">${escapeHtml(item)}</span>`).join("")}</div>
+      ${generated.data.ingredients.map((item) => `<div class="recipe-table-row" role="row"><span role="cell">${escapeHtml(item.name)}</span><span role="cell">${escapeHtml(item.amount)}</span><span role="cell">${escapeHtml(item.note)}</span></div>`).join("")}
+    `;
+    robotTable.innerHTML = `
+      <div class="recipe-table-row recipe-table-head" role="row">${recipe.robotHeaders.map((item) => `<span role="columnheader">${escapeHtml(item)}</span>`).join("")}</div>
+      ${generated.data.steps.map((step) => `<div class="recipe-table-row" role="row"><span role="cell">${escapeHtml(step.stage)}</span><span role="cell">${step.temperatureC === null ? "—" : `${step.temperatureC}C`}</span><span role="cell">${escapeHtml(step.timeRange)}</span><span role="cell">${escapeHtml(step.action)}</span></div>`).join("")}
+    `;
+    const qcList = document.querySelector("[data-view='recipe'] [data-recipe-section='qc'] + .handoff-list");
+    const auditList = document.querySelector("[data-view='recipe'] [data-recipe-section='audit'] + .handoff-list");
+    if (qcList) qcList.innerHTML = generated.data.qualityGates.map((item) => `<li><i data-lucide="check" aria-hidden="true"></i><span>${escapeHtml(item)}</span></li>`).join("");
+    if (auditList) auditList.innerHTML = generated.data.auditTrail.map((item) => `<li><i data-lucide="history" aria-hidden="true"></i><span>${escapeHtml(item)}</span></li>`).join("");
+    renderIcons();
+    return;
+  }
+
+  document.querySelectorAll("[data-view='recipe'] .recipe-table:not(.robot-table) .recipe-table-row").forEach((row, index) => {
     const values = index === 0 ? recipe.ingredientsHeaders : recipe.ingredients[index - 1];
     row.querySelectorAll("span").forEach((cell, cellIndex) => {
       cell.textContent = values[cellIndex];
     });
   });
 
-  const robotRows = document.querySelectorAll("[data-view='recipe'] .robot-table .recipe-table-row");
-  robotRows.forEach((row, index) => {
+  document.querySelectorAll("[data-view='recipe'] .robot-table .recipe-table-row").forEach((row, index) => {
     const values = index === 0 ? recipe.robotHeaders : recipe.robotRows[index - 1];
     row.querySelectorAll("span").forEach((cell, cellIndex) => {
       cell.textContent = values[cellIndex];
@@ -2091,12 +2723,30 @@ function renderRangeOutputs() {
 
 function renderSteps() {
   const c = currentCopy();
+  const ui = currentAiCopy();
   if (!robotizedSteps) return;
-  if (!state.robotized) {
+  const result = getAiResult("recipe_standardize");
+  if (!result) {
     robotizedSteps.innerHTML = `<li class="is-empty">${c.ideation.emptySteps}</li>`;
     return;
   }
-  robotizedSteps.innerHTML = c.ideation.generatedSteps.map((step) => `<li>${step}</li>`).join("");
+  const data = result.data;
+  robotizedSteps.innerHTML = `
+    <li class="step-list-heading">${escapeHtml(ui.recipe.stages)}</li>
+    ${data.stages.map((step) => `
+      <li>
+        <strong>${escapeHtml(step.name)}</strong>
+        <span>${escapeHtml(step.chefIntent)}</span>
+        <small>${escapeHtml([
+          step.estimatedTemperatureC === null ? "" : `${step.estimatedTemperatureC}C`,
+          step.estimatedDurationSeconds === null ? "" : `${step.estimatedDurationSeconds}s`,
+          step.motion
+        ].filter(Boolean).join(" · "))}</small>
+      </li>
+    `).join("")}
+    ${data.unresolvedItems.length ? `<li class="is-warning"><strong>${escapeHtml(ui.recipe.unresolved)}</strong><span>${escapeHtml(data.unresolvedItems.join(" · "))}</span></li>` : ""}
+    ${data.assumptions.length ? `<li class="is-warning"><strong>${escapeHtml(ui.recipe.assumptions)}</strong><span>${escapeHtml(data.assumptions.join(" · "))}</span></li>` : ""}
+  `;
 }
 
 function renderSaveProgressButton() {
@@ -2167,6 +2817,48 @@ function renderMarketOptions() {
   renderIcons();
 }
 
+function renderChoiceSelect(key) {
+  const c = currentCopy();
+  const form = getActiveBriefForm();
+  const field = c.ideation.briefFields[key];
+  const options = Array.isArray(field?.[1]) ? field[1] : [];
+  const selectedValue = form[key] || "";
+  const selectedLabel = selectedValue === "" ? "" : options[Number(selectedValue)] || "";
+  const control = document.querySelector(`[data-brief-control="${key}"]`);
+  const trigger = document.querySelector(`[data-action="toggle-choice-menu"][data-choice-key="${key}"]`);
+  const summary = document.querySelector(`[data-choice-summary="${key}"]`);
+  const menu = document.querySelector(`[data-choice-options="${key}"]`);
+
+  if (control) control.value = selectedValue;
+  if (summary) summary.textContent = selectedLabel || c.ideation.selectPlaceholder;
+  if (trigger) {
+    trigger.classList.toggle("is-placeholder", !selectedLabel);
+    trigger.setAttribute("aria-expanded", String(state.openSelectKey === key));
+  }
+  if (!menu) return;
+
+  const label = field?.[0] || key;
+  menu.hidden = state.openSelectKey !== key;
+  menu.setAttribute("aria-label", state.language === "zh" ? `${label}选项` : `${label} options`);
+  menu.innerHTML = options
+    .map((option, index) => {
+      const value = String(index);
+      const isSelected = selectedValue === value;
+      return `
+        <button class="${isSelected ? "is-selected" : ""}" type="button" data-action="select-choice" data-choice-key="${key}" data-choice-value="${value}" aria-pressed="${isSelected}">
+          <span>${option}</span>
+          ${isSelected ? `<i data-lucide="check" aria-hidden="true"></i>` : ""}
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function renderChoiceSelects() {
+  selectBriefFields.forEach(renderChoiceSelect);
+  renderIcons();
+}
+
 function renderBriefBuilder() {
   const c = currentCopy();
   const form = getActiveBriefForm();
@@ -2186,17 +2878,15 @@ function renderBriefBuilder() {
       renderMarketOptions();
       return;
     }
-    if (control.tagName === "SELECT") {
-      const optionsHtml = value
-        .map((option, index) => `<option value="${index}"${form[key] === String(index) ? " selected" : ""}>${option}</option>`)
-        .join("");
-      control.innerHTML = `<option value="" disabled ${form[key] ? "" : "selected"}>${c.ideation.selectPlaceholder}</option>${optionsHtml}`;
+    if (selectBriefFields.includes(key)) {
+      renderChoiceSelect(key);
     } else {
       control.value = form[key] || "";
       control.placeholder = value;
     }
   });
 
+  renderChoiceSelects();
   renderBriefFeedback();
 }
 
@@ -2206,27 +2896,6 @@ function renderAnalysisList(selector, items, isEmpty = false) {
   list.innerHTML = items
     .map((item) => `<li class="${isEmpty ? "is-empty" : ""}">${item}</li>`)
     .join("");
-}
-
-function buildDetectedItems(form, analysis) {
-  const goal = form.dishGoal.toLowerCase();
-  const items = [];
-  if (/午餐|高峰|lunch|rush/.test(goal)) items.push(analysis.tokens.lunch);
-  if (/微辣|mild/.test(goal)) items.push(analysis.tokens.mild);
-  if (/花椒|pepper/.test(goal)) items.push(analysis.tokens.pepper);
-  if (/\$?3|成本|cost/.test(goal)) items.push(analysis.tokens.cost);
-  return items.length ? items : [analysis.defaultDetected];
-}
-
-function buildSensoryKeywords(form, analysis) {
-  const goal = form.dishGoal.toLowerCase();
-  const keywords = [];
-  if (/麻|微辣|mala|numbing|mild/.test(goal)) keywords.push(analysis.sensoryKeywords.numbing);
-  if (/花椒|pepper/.test(goal)) keywords.push(analysis.sensoryKeywords.pepper);
-  if (/米饭|颗粒|rice|grain/.test(goal)) keywords.push(analysis.sensoryKeywords.rice);
-  if (/低油|少油|low-oil|light/.test(goal)) keywords.push(analysis.sensoryKeywords.lowOil);
-  if (/咸鲜|鲜味|savory|umami/.test(goal)) keywords.push(analysis.sensoryKeywords.savory);
-  return Array.from(new Set(keywords));
 }
 
 function buildConfirmedItems(form) {
@@ -2241,86 +2910,126 @@ function buildConfirmedItems(form) {
   return confirmed;
 }
 
-function getBriefConflicts(form) {
-  const goal = form.dishGoal.toLowerCase();
-  const hasMildGoal = /微辣|mild/.test(goal);
-  const isBoldSpice = form.spice === "2";
-  return hasMildGoal && isBoldSpice ? ["spice"] : [];
+function buildBriefPayload(form = getActiveBriefForm()) {
+  return {
+    projectName: form.projectName,
+    dishName: form.dishName,
+    dishGoal: form.dishGoal,
+    structuredFields: {
+      researchType: displayBriefValue("type", form),
+      storeScene: displayBriefValue("scene", form),
+      targetMarkets: displayBriefValue("markets", form),
+      audience: displayBriefValue("audience", form),
+      protein: displayBriefValue("protein", form),
+      priceOrCost: form.price,
+      tasteTarget: displayBriefValue("spice", form),
+      sensoryTarget: displayBriefValue("aroma", form),
+      constraints: form.constraints,
+      targetBatch: form.batch,
+      preprocessing: displayBriefValue("prep", form),
+      robotBoundary: displayBriefValue("robot", form)
+    }
+  };
+}
+
+function briefInputSignature(form = getActiveBriefForm()) {
+  return JSON.stringify(buildBriefPayload(form));
 }
 
 function renderIdeationAnalysis() {
   const c = currentCopy();
-  const analysis = c.ideation.analysis;
+  const ui = currentAiCopy();
+  const legacy = c.ideation.analysis;
   const conflictList = document.querySelector("[data-conflict-list]");
   const sensoryPanel = document.querySelector("[data-sensory-keywords-panel]");
   const sensoryKeywords = document.querySelector("[data-sensory-keywords]");
   const form = getActiveBriefForm();
-  const hasGoal = Boolean(form.dishGoal);
+  const result = getAiResult("brief_analyze");
+  const data = result?.data;
   const isAnalyzing = state.briefAnalysisState === "analyzing";
-  const conflicts = hasGoal && !isAnalyzing ? getBriefConflicts(form) : [];
-  const unresolvedConflicts = conflicts.filter((id) => !state.briefResolvedConflicts.includes(id));
-  const status = !hasGoal
-    ? analysis.emptyStatus
-    : isAnalyzing
-      ? analysis.analyzingStatus
-      : unresolvedConflicts.length
-        ? analysis.conflictStatus(unresolvedConflicts.length)
-        : analysis.readyStatus;
+  const conflicts = data?.conflicts || [];
+  const unresolvedConflicts = conflicts.filter((item) => !state.briefResolvedConflicts.includes(item.id));
+  const status = isAnalyzing
+    ? ui.actions.analyzingBrief
+    : state.briefAnalysisState === "stale"
+      ? ui.states.stale
+      : data
+        ? unresolvedConflicts.length
+          ? ui.states.missingConflict(unresolvedConflicts.length)
+          : ui.states.analyzed
+        : ui.states.emptyAnalysis;
 
-  text(".conflict-panel .section-kicker", analysis.kicker);
-  text("#conflict-title", analysis.title);
+  text(".conflict-panel .section-kicker", legacy.kicker);
+  text("#conflict-title", legacy.title);
   text("[data-conflict-status]", status);
-  text("[data-analysis-title='detected']", analysis.detectedTitle);
-  text("[data-analysis-title='confirmed']", analysis.confirmedTitle);
-  text("[data-analysis-title='sensory']", analysis.sensoryTitle);
-  if (!hasGoal) {
-    renderAnalysisList("[data-analysis-list='detected']", [analysis.emptyDetected], true);
-    renderAnalysisList("[data-analysis-list='confirmed']", [analysis.emptyConfirmed], true);
-  } else if (isAnalyzing) {
-    renderAnalysisList("[data-analysis-list='detected']", [analysis.analyzingDetected], true);
-    renderAnalysisList("[data-analysis-list='confirmed']", buildConfirmedItems(form).length ? buildConfirmedItems(form) : [analysis.emptyConfirmed], !buildConfirmedItems(form).length);
-  } else {
-    const confirmed = buildConfirmedItems(form);
-    renderAnalysisList("[data-analysis-list='detected']", buildDetectedItems(form, analysis));
-    renderAnalysisList("[data-analysis-list='confirmed']", confirmed.length ? confirmed : [analysis.emptyConfirmed], !confirmed.length);
-  }
+  text("[data-analysis-title='detected']", ui.brief.detected);
+  text("[data-analysis-title='confirmed']", ui.brief.confirmed);
+  text("[data-analysis-title='sensory']", ui.brief.sensory);
+  const confirmed = buildConfirmedItems(form);
+  const detected = data?.recognizedFacts?.map((item) => `${item.label}: ${item.value} · ${ui.states.evidence}: ${item.evidence}`) || [];
+  renderAnalysisList(
+    "[data-analysis-list='detected']",
+    isAnalyzing
+      ? [legacy.analyzingDetected]
+      : detected.length
+        ? detected
+        : [legacy.emptyDetected],
+    !detected.length
+  );
+  renderAnalysisList(
+    "[data-analysis-list='confirmed']",
+    confirmed.length ? confirmed : [legacy.emptyConfirmed],
+    !confirmed.length
+  );
 
   if (sensoryPanel && sensoryKeywords) {
-    const keywords = hasGoal && !isAnalyzing ? buildSensoryKeywords(form, analysis) : [];
+    const keywords = data?.sensoryKeywords || [];
     sensoryPanel.hidden = keywords.length === 0;
-    sensoryKeywords.innerHTML = keywords.map((item) => `<span>${item}</span>`).join("");
+    sensoryKeywords.innerHTML = keywords.map((item) => `<span>${escapeHtml(item)}</span>`).join("");
   }
 
   if (!conflictList) return;
-  if (!hasGoal || isAnalyzing) {
-    conflictList.innerHTML = `<h3>${analysis.conflictTitle}</h3><p class="analysis-empty">${analysis.noConflicts}</p>`;
-    return;
-  }
-
-  if (!conflicts.length) {
-    conflictList.innerHTML = `<h3>${analysis.conflictTitle}</h3><p class="analysis-empty">${analysis.noConflicts}</p>`;
+  if (!data || isAnalyzing) {
+    conflictList.innerHTML = `<h3>${escapeHtml(ui.brief.conflicts)}</h3><p class="analysis-empty">${escapeHtml(ui.states.noConflict)}</p>`;
     return;
   }
 
   conflictList.innerHTML = `
-    <h3>${analysis.conflictTitle}</h3>
+    <h3>${escapeHtml(ui.brief.conflicts)}</h3>
+    ${data.missingQuestions?.length ? `
+      <section class="analysis-followups">
+        <strong>${escapeHtml(ui.brief.missing)}</strong>
+        <ul>${data.missingQuestions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </section>
+    ` : ""}
     ${conflicts
-      .map((id) => {
-        const isResolved = state.briefResolvedConflicts.includes(id);
+      .map((conflict) => {
+        const isResolved = state.briefResolvedConflicts.includes(conflict.id);
+        const selected = ensureProjectAi().conflictResolutions[conflict.id];
         return `
         <article class="conflict-item ${isResolved ? "is-resolved" : ""}">
           <div>
-            <strong>${analysis.conflict[0]}</strong>
-            <p>${analysis.conflict[1]}</p>
-            ${isResolved ? `<small>${analysis.resolved}</small>` : ""}
+            <strong>${escapeHtml(conflict.title)}</strong>
+            <p>${escapeHtml(conflict.description)}</p>
+            <small>${escapeHtml(conflict.sourceA)} · ${escapeHtml(conflict.sourceB)}</small>
+            ${isResolved ? `<small>${escapeHtml(ui.states.resolved)}</small>` : ""}
           </div>
           <div class="conflict-actions">
-            ${analysis.conflictActions.map((action, index) => `<button class="${isResolved && index === 0 ? "is-selected" : ""}" type="button" data-action="resolve-conflict" data-conflict-id="${id}">${action}</button>`).join("")}
+            ${conflict.resolutionOptions.map((option) => `
+              <button class="${selected === option.id ? "is-selected" : ""}" type="button" data-action="resolve-conflict" data-conflict-id="${escapeHtml(conflict.id)}" data-resolution-id="${escapeHtml(option.id)}" title="${escapeHtml(option.impact)}">${escapeHtml(option.label)}</button>
+            `).join("")}
           </div>
         </article>
       `;
       })
       .join("")}
+    ${!conflicts.length ? `<p class="analysis-empty">${escapeHtml(ui.states.noConflict)}</p>` : ""}
+    ${data.warnings?.length ? `
+      <section class="analysis-followups is-warning">
+        <strong>${escapeHtml(ui.brief.warnings)}</strong>
+        <ul>${data.warnings.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </section>
+    ` : ""}
   `;
 }
 
@@ -2332,7 +3041,9 @@ function renderFieldStatus(control, force = false) {
     ? document.querySelector("label[for='dish-brief']")
     : field === "markets"
       ? document.querySelector("[data-market-field]")
-      : control.closest("label");
+      : selectBriefFields.includes(field)
+        ? document.querySelector(`[data-select-field="${field}"]`)
+        : control.closest("label");
   const isRequired = requiredBriefFields.includes(field);
   const isSuggested = suggestedBriefFields.includes(field);
   const touched = state.briefTouchedFields.includes(field) || force;
@@ -2370,8 +3081,15 @@ function renderFieldStatus(control, force = false) {
 
 function renderBriefFeedback(forceMissing = false) {
   const c = currentCopy();
+  const ui = currentAiCopy();
   const form = getActiveBriefForm();
   const completion = getBriefCompletion(form);
+  const analysis = getAiResult("brief_analyze")?.data;
+  const unresolvedConflicts = analysis?.conflicts?.filter((item) => !state.briefResolvedConflicts.includes(item.id)) || [];
+  const canGenerate = completion.complete
+    && Boolean(analysis)
+    && state.briefAnalysisState === "ready"
+    && unresolvedConflicts.length === 0;
   const progressNode = document.querySelector("[data-brief-progress]");
 
   [projectNameInput, dishNameInput, dishBrief, ...document.querySelectorAll("[data-brief-control]")].forEach((control) => {
@@ -2394,10 +3112,10 @@ function renderBriefFeedback(forceMissing = false) {
   }
 
   if (generateButton && !generateButton.classList.contains("is-loading")) {
-    generateButton.disabled = !completion.complete;
-    generateButton.classList.toggle("is-disabled", !completion.complete);
-    generateButton.title = completion.complete ? "" : c.ideation.requiredHint;
-    setButtonContent(generateButton, "sparkles", completion.complete ? c.ideation.generate : c.ideation.requiredHint);
+    generateButton.disabled = !canGenerate;
+    generateButton.classList.toggle("is-disabled", !canGenerate);
+    generateButton.title = canGenerate ? "" : ui.states.notReady;
+    setButtonContent(generateButton, "sparkles", canGenerate ? ui.actions.generateRobot : c.ideation.requiredHint);
   }
 
   if (robotizeButton) {
@@ -2406,31 +3124,34 @@ function renderBriefFeedback(forceMissing = false) {
     robotizeButton.classList.toggle("is-disabled", !canRobotize);
   }
 
+  const analyzeButton = document.querySelector("[data-action='analyze-brief']");
+  if (analyzeButton && !analyzeButton.classList.contains("is-loading")) {
+    analyzeButton.disabled = !form.dishGoal;
+    setButtonContent(analyzeButton, "scan-search", analysis ? ui.actions.analyzeAgain : ui.actions.analyzeBrief);
+  }
+
   renderIdeationAnalysis();
+  renderProjectNaming();
   renderTopState();
 }
 
 function scheduleBriefAnalysis(field) {
   const form = getActiveBriefForm();
-  window.clearTimeout(briefAnalysisTimer);
-
-  if (!form.dishGoal) {
-    state.briefAnalysisState = "empty";
+  const project = getActiveProject();
+  const ai = project ? ensureProjectAi(project) : null;
+  if (ai?.briefAnalysis && ai.briefInputSignature === briefInputSignature(form)) {
+    if (state.briefAnalysisState !== "analyzing") state.briefAnalysisState = "ready";
     renderBriefFeedback();
     return;
   }
-
-  if (field === "dishGoal") {
-    state.briefAnalysisState = "analyzing";
-    renderBriefFeedback();
-    briefAnalysisTimer = window.setTimeout(() => {
-      state.briefAnalysisState = "ready";
-      renderBriefFeedback();
-    }, 420);
-    return;
+  if (ai?.briefAnalysis) {
+    ai.translations = {};
+    state.briefResolvedConflicts = [];
+    ai.conflictResolutions = {};
+    state.briefAnalysisState = form.dishGoal ? "stale" : "empty";
+  } else {
+    state.briefAnalysisState = form.dishGoal ? "stale" : "empty";
   }
-
-  state.briefAnalysisState = "ready";
   renderBriefFeedback();
 }
 
@@ -2446,7 +3167,11 @@ function handleBriefControlChange(event) {
   if (field === "dishGoal" || field === "spice") {
     state.briefResolvedConflicts = [];
   }
-  scheduleBriefAnalysis(field);
+  if (field === "chefRecipe") {
+    renderBriefFeedback();
+  } else {
+    scheduleBriefAnalysis(field);
+  }
 }
 
 function renderShareScope(items) {
@@ -2480,45 +3205,462 @@ function renderReview() {
   text(".full[data-action='invite-reviewer'] span", reviewState.sendInvite);
 }
 
-function renderVersions() {
+function renderRobotData() {
   const c = currentCopy();
-  document.querySelectorAll(".version-row").forEach((button, index) => {
-    const row = c.versions.rows[index];
-    button.querySelector("span").textContent = row[0];
-    button.querySelector("strong").textContent = row[1];
-    button.querySelector("small").textContent = row[2];
-    button.classList.toggle("is-selected", button.dataset.version === state.selectedVersion);
-  });
+  const ui = currentAiCopy();
+  const result = getAiResult("robot_data_generate");
+  const data = result?.data;
+  const temperatureStages = document.querySelector("[data-temperature-stages]");
+  const ingredientSchedule = document.querySelector("[data-ingredient-schedule]");
+  const wokActions = document.querySelector("[data-wok-actions]");
+  const qualityGates = document.querySelector("[data-quality-gates]");
+  const evidence = document.querySelector("[data-robot-evidence]");
+  const nextButton = document.querySelector("[data-view='blueprint'] [data-action='advance-workflow']");
 
-  const detail = c.versions.details[state.selectedVersion];
-  text("[data-version-title]", detail[0]);
-  text("[data-version-score]", detail[1]);
-  text("[data-version-change]", detail[2]);
+  text("[data-robot-safety] strong", ui.states.aiDraft);
+  text("[data-robot-safety] span", ui.states.deviceWarning);
+  if (blueprintState) {
+    blueprintState.className = `status-pill ${data ? "warning" : "neutral"}`;
+    blueprintState.textContent = data ? ui.robot.generated : c.blueprint.state;
+  }
+  if (!data) {
+    if (temperatureStages) temperatureStages.innerHTML = `<p class="ai-empty">${escapeHtml(ui.states.waitingRobot)}</p>`;
+    if (ingredientSchedule) ingredientSchedule.innerHTML = "";
+    if (wokActions) wokActions.innerHTML = "";
+    if (qualityGates) qualityGates.innerHTML = "";
+    if (evidence) evidence.innerHTML = "";
+    if (nextButton) nextButton.disabled = true;
+    return;
+  }
 
-  const versionDetailRows = document.querySelectorAll(".version-detail dl div");
-  c.versions.detailLabels.forEach((label, index) => {
-    const row = versionDetailRows[index];
-    if (row) {
-      row.querySelector("dt").textContent = label;
-    }
+  if (temperatureStages) {
+    temperatureStages.innerHTML = data.temperatureStages.map((stage) => `
+      <article class="temperature-stage">
+        <span>${stage.startSecond}-${stage.endSecond}s</span>
+        <strong>${stage.temperatureC}C</strong>
+        <small>${escapeHtml(stage.label)}</small>
+        <p>${escapeHtml(stage.intent)}</p>
+      </article>
+    `).join("");
+  }
+  if (ingredientSchedule) {
+    ingredientSchedule.innerHTML = `
+      <div class="schedule-row schedule-header" role="row">
+        <span role="columnheader">${escapeHtml(ui.robot.time)}</span>
+        <span role="columnheader">${escapeHtml(ui.robot.ingredient)}</span>
+        <span role="columnheader">${escapeHtml(ui.robot.amount)}</span>
+      </div>
+      ${data.ingredientSchedule.map((item) => `
+        <div class="schedule-row" role="row" title="${escapeHtml(item.purpose)}">
+          <span role="cell">${item.atSecond}s</span>
+          <span role="cell">${escapeHtml(item.ingredient)}</span>
+          <span role="cell">${escapeHtml(item.amount)}</span>
+        </div>
+      `).join("")}
+    `;
+  }
+  if (wokActions) {
+    wokActions.innerHTML = data.wokActions.map((action) => `
+      <li><strong>${escapeHtml(action.label)}</strong><span>${action.startSecond}-${action.endSecond}s · ${action.rpm} rpm · ${escapeHtml(action.intent)}</span></li>
+    `).join("");
+  }
+  if (qualityGates) {
+    qualityGates.innerHTML = data.qualityGates.map((gate) => `
+      <li><span class="check-dot ${escapeHtml(gate.severity)}"></span><strong>${escapeHtml(gate.title)}</strong><small>${escapeHtml(gate.description)}</small></li>
+    `).join("");
+  }
+  if (evidence) {
+    evidence.innerHTML = `
+      ${data.risks.length ? `<section><h3>${escapeHtml(ui.robot.risks)}</h3><ul>${data.risks.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
+      <section><h3>${escapeHtml(ui.robot.assumptions)}</h3><ul>${data.assumptions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>
+      <section><h3>${escapeHtml(ui.robot.basis)}</h3><ul>${data.basis.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>
+    `;
+  }
+
+  const summary = data.parameterSummary;
+  const values = {
+    "preheat-value": summary.preheatTemperatureC,
+    "speed-value": summary.tossSpeedRpm,
+    "sauce-value": summary.sauceTimingSecond,
+    "batch-value": summary.batchSize
+  };
+  Object.entries(values).forEach(([outputId, value]) => {
+    const range = document.querySelector(`[data-range-output="${outputId}"]`);
+    if (!range) return;
+    const min = Number(range.min);
+    const max = Number(range.max);
+    range.value = String(Math.max(min, Math.min(max, value)));
   });
-  if (versionDetailRows[1]) versionDetailRows[1].querySelector("dd").textContent = c.versions.audit;
-  if (versionDetailRows[2]) versionDetailRows[2].querySelector("dd").textContent = c.versions.next;
+  renderRangeOutputs();
+  if (nextButton) nextButton.disabled = false;
+}
+
+function renderPhotoPreviews() {
+  const container = document.querySelector("[data-photo-previews]");
+  if (!container) return;
+  const photos = ensureProjectAi().photos;
+  container.innerHTML = photos.map((photo) => `
+    <figure class="photo-preview">
+      <img src="${photo.dataUrl}" alt="${escapeHtml(photo.name)}">
+      <figcaption>${escapeHtml(photo.name)}</figcaption>
+      <button class="icon-button" type="button" data-action="remove-experiment-photo" data-photo-id="${escapeHtml(photo.id)}" aria-label="Remove ${escapeHtml(photo.name)}" title="Remove ${escapeHtml(photo.name)}">
+        <i data-lucide="x" aria-hidden="true"></i>
+      </button>
+    </figure>
+  `).join("");
+  renderIcons();
+}
+
+function loadImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Unable to read image"));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("Unable to decode image"));
+      image.onload = () => resolve({ image, source: reader.result });
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressExperimentPhoto(file) {
+  const { image } = await loadImageFile(file);
+  const maxEdge = 1600;
+  const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const context = canvas.getContext("2d", { alpha: false });
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.78);
+}
+
+async function addExperimentPhotos(fileList) {
+  const ui = currentAiCopy();
+  const files = Array.from(fileList || []);
+  const totalBytes = files.reduce((total, file) => total + file.size, 0);
+  const photos = ensureProjectAi().photos;
+  if (photos.length + files.length > 3 || totalBytes > 10 * 1024 * 1024) {
+    showToast(ui.experiment.photoLimit);
+    return;
+  }
+  const validFiles = files.filter((file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type));
+  const compressed = await Promise.all(validFiles.map(async (file) => ({
+    id: crypto.randomUUID(),
+    name: file.name,
+    dataUrl: await compressExperimentPhoto(file)
+  })));
+  const encodedBytes = compressed.reduce((total, photo) => total + photo.dataUrl.length, 0);
+  if (encodedBytes > 3_500_000) {
+    showToast(ui.errors.PAYLOAD_TOO_LARGE);
+    return;
+  }
+  photos.push(...compressed);
+  markBriefDirty();
+  renderPhotoPreviews();
+}
+
+function renderVersions() {
+  const ui = currentAiCopy();
+  const ai = ensureProjectAi();
+  const result = getAiResult("experiment_compare");
+  const data = result?.data;
+  const resultPanel = document.querySelector("[data-experiment-result]");
+  const confirmButton = document.querySelector("[data-view='versions'] [data-action='advance-workflow']");
+  const analyzeButton = document.querySelector("[data-action='analyze-experiments']");
+
+  Object.entries(ui.experiment).forEach(([key, value]) => {
+    if (typeof value === "string") text(`[data-experiment-label="${key}"]`, value);
+  });
+  text("[data-photo-help]", ui.experiment.photoHelp);
+  if (analyzeButton && !analyzeButton.classList.contains("is-loading")) {
+    setButtonContent(analyzeButton, "images", ui.actions.analyzeExperiment);
+  }
+  document.querySelectorAll("[data-experiment-input]").forEach((control) => {
+    const key = control.dataset.experimentInput;
+    if (document.activeElement !== control) control.value = ai.experiment[key] || "";
+  });
+  renderPhotoPreviews();
+
+  if (!resultPanel) return;
+  if (!data) {
+    text("[data-version-title]", ui.states.waitingExperiment);
+    text("[data-version-score]", ensureProjectAi().photos.length ? `${ensureProjectAi().photos.length}/3` : "0/3");
+    resultPanel.innerHTML = `<p class="ai-empty">${escapeHtml(ui.states.waitingExperiment)}</p>`;
+    if (confirmButton) confirmButton.disabled = true;
+    return;
+  }
+  text("[data-version-title]", ui.experiment.resultTitle);
+  const score = data.comparedVersions.find((item) => item.score !== null)?.score;
+  text("[data-version-score]", score === undefined ? ui.states.completed : `${score}/10`);
+  resultPanel.innerHTML = `
+    <section><h3>${escapeHtml(ui.experiment.recommendation)}</h3><p>${escapeHtml(data.recommendation)}</p></section>
+    ${data.visualObservations.length ? `<section><h3>${escapeHtml(ui.experiment.visual)}</h3><ul>${data.visualObservations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
+    ${data.tradeoffs.length ? `<section><h3>${escapeHtml(ui.experiment.tradeoffs)}</h3><ul>${data.tradeoffs.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
+    <section><h3>${escapeHtml(ui.experiment.next)}</h3><p>${escapeHtml(data.nextExperiment)}</p></section>
+    <section class="is-warning"><h3>${escapeHtml(ui.experiment.limitations)}</h3><ul>${data.limitations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>
+  `;
+  if (confirmButton) confirmButton.disabled = false;
 }
 
 function renderLocalization() {
-  const c = currentCopy();
-  document.querySelectorAll(".locale-card").forEach((card, index) => {
-    const item = c.localization.cards[index];
-    card.querySelector("h3").textContent = item[0];
-    card.querySelector("p").textContent = item[1];
-    card.querySelectorAll("dt").forEach((dt, dtIndex) => {
-      dt.textContent = item[2][dtIndex];
+  const ui = currentAiCopy();
+  const result = getAiResult("localization_research");
+  const data = result?.data;
+  const grid = document.querySelector("[data-localization-results]");
+  const sources = document.querySelector("[data-localization-sources]");
+  const finalButton = document.querySelector("[data-action='generate-final-recipe']");
+  const researchButton = document.querySelector("[data-action='compare-locales']");
+
+  if (researchButton && !researchButton.classList.contains("is-loading")) {
+    setButtonContent(researchButton, "search", data ? ui.actions.researchAgain : ui.actions.research);
+  }
+  if (!grid) return;
+  if (!data) {
+    grid.innerHTML = `<p class="ai-empty">${escapeHtml(ui.states.waitingLocalization)}</p>`;
+    if (sources) sources.hidden = true;
+    if (finalButton) finalButton.disabled = true;
+    return;
+  }
+
+  grid.innerHTML = data.variants.map((variant) => `
+    <article class="locale-card">
+      <h3>${escapeHtml(variant.market)}</h3>
+      <p>${escapeHtml(variant.summary)}</p>
+      <section><h4>${escapeHtml(ui.localization.taste)}</h4><ul>${variant.tasteAdjustments.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>
+      <section><h4>${escapeHtml(ui.localization.substitutions)}</h4><ul>${variant.ingredientSubstitutions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>
+      <dl>
+        <div><dt>${escapeHtml(ui.localization.cost)}</dt><dd>${escapeHtml(variant.costAssumption)}</dd></div>
+        <div><dt>${escapeHtml(ui.localization.execution)}</dt><dd>${escapeHtml(variant.executabilityImpact)}</dd></div>
+      </dl>
+      ${variant.sourcedFacts.length ? `<section class="source-facts"><h4>${escapeHtml(ui.localization.facts)}</h4><ul>${variant.sourcedFacts.map((item) => {
+        const sourceUrl = safeExternalUrl(item.sourceUrl);
+        const publicationDate = item.publicationDate
+          ? `<span class="source-date">${escapeHtml(ui.localization.publicationDate)}: ${escapeHtml(item.publicationDate)}</span>`
+          : "";
+        return `<li><span>${escapeHtml(item.claim)}${sourceUrl ? ` <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">↗</a>` : ""}</span>${publicationDate}</li>`;
+      }).join("")}</ul></section>` : ""}
+      ${variant.inferences.length ? `<section><h4>${escapeHtml(ui.localization.inference)}</h4><ul>${variant.inferences.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
+      ${variant.validationItems.length ? `<section class="is-warning"><h4>${escapeHtml(ui.localization.validation)}</h4><ul>${variant.validationItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
+    </article>
+  `).join("");
+  if (sources) {
+    const citations = result.citations || [];
+    sources.hidden = citations.length === 0;
+    sources.innerHTML = `
+      <h3>${escapeHtml(ui.localization.sources)}</h3>
+      <ol>${citations.map((citation) => {
+        const citationUrl = safeExternalUrl(citation.url);
+        return citationUrl ? `<li><a href="${escapeHtml(citationUrl)}" target="_blank" rel="noreferrer">${escapeHtml(citation.title || citation.url)}</a></li>` : "";
+      }).join("")}</ol>
+      <h3>${escapeHtml(ui.localization.sharedCore)}</h3>
+      <ul>${data.sharedCore.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    `;
+  }
+  if (finalButton) finalButton.disabled = false;
+}
+
+async function translateGeneratedResults(targetLanguage) {
+  const project = getActiveProject();
+  if (!project) return;
+  const targetLocale = targetLanguage === "zh" ? "zh-CN" : "en";
+  const ai = ensureProjectAi(project);
+  const tasks = [
+    "brief_analyze",
+    "recipe_standardize",
+    "robot_data_generate",
+    "experiment_compare",
+    "localization_research",
+    "final_recipe_generate"
+  ];
+  const sourceEntries = tasks
+    .map((task) => [task, ai[taskStateKey(task)]])
+    .filter(([, result]) => result && result.locale !== targetLocale && !ai.translations[`${task}:${targetLocale}`]);
+  if (!sourceEntries.length) return;
+
+  const sourceData = Object.fromEntries(sourceEntries.map(([task, result]) => [task, result.data]));
+  try {
+    const response = await requestAi("translate_result", {
+      sourceLocale: sourceEntries[0][1].locale,
+      targetLocale,
+      data: sourceData
     });
-    card.querySelectorAll("dd").forEach((dd, ddIndex) => {
-      dd.textContent = item[3][ddIndex];
+    sourceEntries.forEach(([task, original]) => {
+      ai.translations[`${task}:${targetLocale}`] = {
+        ...original,
+        locale: targetLocale,
+        data: response.data[task]
+      };
     });
+    applyLanguage();
+  } catch (error) {
+    if (error.code !== "CANCELLED") showToast(currentAiCopy().states.translationFailed);
+  }
+}
+
+async function analyzeBrief(button) {
+  const form = syncBriefFormFromControls();
+  const inputSignature = briefInputSignature(form);
+  if (!form.dishGoal) {
+    markBriefTouched("dishGoal");
+    renderBriefFeedback(true);
+    return;
+  }
+  state.briefAnalysisState = "analyzing";
+  renderBriefFeedback();
+  try {
+    await requestAi("brief_analyze", buildBriefPayload(form), {
+      button,
+      loadingLabel: currentAiCopy().actions.analyzingBrief
+    });
+    state.briefAnalysisState = "ready";
+    state.briefResolvedConflicts = [];
+    ensureProjectAi().conflictResolutions = {};
+    ensureProjectAi().briefInputSignature = inputSignature;
+    renderBriefFeedback();
+  } catch (error) {
+    state.briefAnalysisState = "empty";
+    renderBriefFeedback();
+    if (error.code !== "CANCELLED") showToast(aiErrorMessage(error));
+  }
+}
+
+async function standardizeChefRecipe(button) {
+  const form = syncBriefFormFromControls();
+  if (!form.chefRecipe) {
+    showToast(currentCopy().toasts.missingChefRecipe);
+    return;
+  }
+  try {
+    await requestAi("recipe_standardize", {
+      chefRecipe: form.chefRecipe,
+      brief: buildBriefPayload(form)
+    }, {
+      button,
+      loadingLabel: currentAiCopy().actions.standardizing
+    });
+    state.robotized = true;
+    renderSteps();
+  } catch (error) {
+    if (error.code !== "CANCELLED") showToast(aiErrorMessage(error));
+  }
+}
+
+async function generateRobotData(button) {
+  const form = syncBriefFormFromControls();
+  const analysis = getAiResult("brief_analyze");
+  const unresolved = analysis?.data?.conflicts?.filter((item) => !state.briefResolvedConflicts.includes(item.id)) || [];
+  if (getMissingRequiredFields(form).length || !analysis || unresolved.length) {
+    requiredBriefFields.forEach(markBriefTouched);
+    renderBriefFeedback(true);
+    showToast(currentAiCopy().states.notReady);
+    return;
+  }
+  try {
+    await requestAi("robot_data_generate", {
+      brief: buildBriefPayload(form),
+      analysis: analysis.data,
+      conflictResolutions: ensureProjectAi().conflictResolutions,
+      standardizedRecipe: getAiResult("recipe_standardize")?.data || null,
+      warning: currentAiCopy().states.deviceWarning
+    }, {
+      button,
+      loadingLabel: currentAiCopy().actions.generatingRobot,
+      phases: currentAiCopy().states.phasesRobot
+    });
+    state.blueprintDraft = true;
+    syncActiveProjectFromForm();
+    advanceWorkflowTo("blueprint");
+    renderRobotData();
+    renderProjectCenter();
+    renderWorkflow();
+    renderTopState();
+    switchView("blueprint");
+  } catch (error) {
+    if (error.code !== "CANCELLED") showToast(aiErrorMessage(error));
+  }
+}
+
+function syncExperimentInputs() {
+  const ai = ensureProjectAi();
+  document.querySelectorAll("[data-experiment-input]").forEach((control) => {
+    ai.experiment[control.dataset.experimentInput] = control.value.trim();
   });
+  return ai.experiment;
+}
+
+async function analyzeExperiments(button) {
+  const experiment = syncExperimentInputs();
+  const hasInput = Object.values(experiment).some(Boolean) || ensureProjectAi().photos.length > 0;
+  if (!hasInput) {
+    showToast(currentAiCopy().experiment.noInput);
+    return;
+  }
+  try {
+    await requestAi("experiment_compare", {
+      robotData: getAiResult("robot_data_generate")?.data,
+      experiments: [{
+        id: "V1",
+        ...experiment
+      }],
+      photos: ensureProjectAi().photos.map((photo) => photo.dataUrl),
+      imageLimitations: currentAiCopy().experiment.photoHelp
+    }, {
+      button,
+      loadingLabel: currentAiCopy().actions.analyzingExperiment
+    });
+    renderVersions();
+  } catch (error) {
+    if (error.code !== "CANCELLED") showToast(aiErrorMessage(error));
+  }
+}
+
+async function researchLocalization(button) {
+  const form = getActiveBriefForm();
+  try {
+    await requestAi("localization_research", {
+      brief: buildBriefPayload(form),
+      robotData: getAiResult("robot_data_generate")?.data,
+      experiment: getAiResult("experiment_compare")?.data,
+      targetMarkets: marketDisplayValue(form)
+    }, {
+      button,
+      loadingLabel: currentAiCopy().actions.researching,
+      phases: currentAiCopy().states.phasesLocalization
+    });
+    renderLocalization();
+  } catch (error) {
+    if (error.code !== "CANCELLED") showToast(aiErrorMessage(error));
+  }
+}
+
+async function generateFinalRecipe(button) {
+  if (!getAiResult("robot_data_generate") || !getAiResult("experiment_compare") || !getAiResult("localization_research")) {
+    showToast(currentAiCopy().states.notReady);
+    return;
+  }
+  try {
+    await requestAi("final_recipe_generate", {
+      brief: buildBriefPayload(),
+      robotData: getAiResult("robot_data_generate")?.data,
+      experiment: getAiResult("experiment_compare")?.data,
+      localization: getAiResult("localization_research")?.data,
+      conflictResolutions: ensureProjectAi().conflictResolutions,
+      status: "team_confirmed_draft"
+    }, {
+      button,
+      loadingLabel: currentAiCopy().actions.generatingFinal
+    });
+    advanceWorkflowTo("final");
+    renderFinalRecipe();
+    renderProjectCenter();
+    renderWorkflow();
+    switchView("final");
+  } catch (error) {
+    if (error.code !== "CANCELLED") showToast(aiErrorMessage(error));
+  }
 }
 
 function renderCheckList(selector, items) {
@@ -2539,6 +3681,7 @@ function applyLanguage() {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   });
+  applyTheme();
 
   text(".skip-link", c.skip);
   attr(".side-rail", "aria-label", c.aria.sideRail);
@@ -2638,43 +3781,20 @@ function applyLanguage() {
 
   text("[data-view='blueprint'] .section-kicker", c.blueprint.kicker);
   text("#blueprint-title", c.blueprint.title);
-  blueprintState.textContent = state.blueprintDraft
-    ? (state.language === "zh" ? "V5 草案就绪" : "V5 draft ready")
-    : c.blueprint.state;
   attr(".temperature-schedule", "aria-label", c.aria.blueprintChart);
   text("[data-temperature-title]", c.blueprint.temperatureTitle);
   text("[data-temperature-subtitle]", c.blueprint.temperatureSubtitle);
-  document.querySelectorAll(".temperature-stage").forEach((item, index) => {
-    const stage = c.blueprint.temperatureStages[index];
-    item.querySelector("span").textContent = stage[0];
-    item.querySelector("strong").textContent = stage[1];
-    item.querySelector("small").textContent = stage[2];
-  });
   text("[data-ingredient-title]", c.blueprint.ingredientTitle);
   attr(".schedule-table", "aria-label", c.aria.ingredientSchedule);
-  document.querySelectorAll(".schedule-header span").forEach((item, index) => {
-    item.textContent = c.blueprint.ingredientHeaders[index];
-  });
-  document.querySelectorAll(".schedule-row:not(.schedule-header)").forEach((item, index) => {
-    const row = c.blueprint.ingredients[index];
-    item.querySelectorAll("span").forEach((cell, cellIndex) => {
-      cell.textContent = row[cellIndex];
-    });
-  });
   document.querySelectorAll(".parameter-grid label").forEach((label, index) => {
     labelText(`.parameter-grid label:nth-child(${index + 1})`, c.blueprint.parameters[index]);
   });
   text(".action-panel .section-kicker", c.blueprint.actionKicker);
   text("#action-title", c.blueprint.actionTitle);
-  document.querySelectorAll(".action-list li").forEach((item, index) => {
-    const action = c.blueprint.actions[index];
-    item.querySelector("strong").textContent = action[0];
-    item.querySelector("span").textContent = action[1];
-  });
   text(".quality-panel .section-kicker", c.blueprint.qualityKicker);
   text("#quality-title", c.blueprint.qualityTitle);
-  renderCheckList("[data-view='blueprint'] .check-list", c.blueprint.quality);
   text("[data-stage-action='blueprintNext']", c.stageActions.blueprintNext);
+  renderRobotData();
 
   text("[data-view='versions'] .panel:first-child .section-kicker", c.versions.kicker);
   text("#versions-title", c.versions.title);
@@ -2719,9 +3839,11 @@ document.addEventListener("click", (event) => {
 });
 
 languageButtons.forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
+    if (button.dataset.language === state.language) return;
     state.language = button.dataset.language;
     applyLanguage();
+    await translateGeneratedResults(state.language);
     showToast(currentCopy().toasts.language);
   });
 });
@@ -2740,6 +3862,10 @@ document.addEventListener("click", (event) => {
   if (!button) return;
   const c = currentCopy();
 
+  if (button.dataset.action === "toggle-theme") {
+    toggleTheme();
+  }
+
   if (button.dataset.action === "open-login") {
     state.authState = "signedOut";
     renderAuth();
@@ -2751,9 +3877,29 @@ document.addEventListener("click", (event) => {
   }
 
   if (button.dataset.action === "logout") {
-    state.authState = "signedOut";
-    renderAuth();
-    showToast(c.toasts.logout);
+    signOutSession().then(() => showToast(currentCopy().toasts.logout));
+  }
+
+  if (button.dataset.action === "remove-experiment-photo") {
+    ensureProjectAi().photos = ensureProjectAi().photos.filter((photo) => photo.id !== button.dataset.photoId);
+    renderPhotoPreviews();
+  }
+
+  if (button.dataset.action === "toggle-login-workspace-menu") {
+    state.loginWorkspaceMenuOpen = !state.loginWorkspaceMenuOpen;
+    state.marketMenuOpen = false;
+    state.openSelectKey = null;
+    renderMarketOptions();
+    renderChoiceSelects();
+    renderLoginWorkspaceOptions();
+  }
+
+  if (button.dataset.action === "select-login-workspace") {
+    state.currentWorkspace = button.dataset.workspace || c.login.workspaces[0];
+    const control = document.querySelector("[data-login-workspace]");
+    if (control) control.value = state.currentWorkspace;
+    state.loginWorkspaceMenuOpen = false;
+    renderLoginWorkspaceOptions();
   }
 
   if (button.dataset.action === "save-progress") {
@@ -2823,6 +3969,8 @@ document.addEventListener("click", (event) => {
 
   if (button.dataset.action === "toggle-market-menu") {
     state.marketMenuOpen = !state.marketMenuOpen;
+    state.openSelectKey = null;
+    renderChoiceSelects();
     renderMarketOptions();
   }
 
@@ -2846,9 +3994,45 @@ document.addEventListener("click", (event) => {
     scheduleBriefAnalysis("markets");
   }
 
+  if (button.dataset.action === "toggle-choice-menu") {
+    const key = button.dataset.choiceKey;
+    if (!selectBriefFields.includes(key)) return;
+    state.openSelectKey = state.openSelectKey === key ? null : key;
+    state.marketMenuOpen = false;
+    renderMarketOptions();
+    renderChoiceSelects();
+  }
+
+  if (button.dataset.action === "select-choice") {
+    const key = button.dataset.choiceKey;
+    const value = button.dataset.choiceValue;
+    if (!selectBriefFields.includes(key)) return;
+    const form = getActiveBriefForm();
+    form[key] = value;
+    const control = document.querySelector(`[data-brief-control="${key}"]`);
+    if (control) control.value = value;
+    markBriefTouched(key);
+    markBriefDirty();
+    applyBriefFormToProject(getActiveProject(), form);
+    if (key === "spice") {
+      state.briefResolvedConflicts = [];
+    }
+    state.openSelectKey = null;
+    renderChoiceSelects();
+    scheduleBriefAnalysis(key);
+  }
+
   if (button.dataset.action === "advance-workflow") {
     const nextStage = button.dataset.nextStage;
     if (!isWorkflowStage(nextStage)) return;
+    const requiredAiTask = {
+      versions: "robot_data_generate",
+      localization: "experiment_compare"
+    }[nextStage];
+    if (requiredAiTask && !getAiResult(requiredAiTask)) {
+      showToast(currentAiCopy().states.notReady);
+      return;
+    }
     const requiredStage = previousWorkflowStage(nextStage);
     const access = requiredStage ? canOpenWorkflowStage(requiredStage) : canOpenWorkflowStage(nextStage);
     if (!access.ok) {
@@ -2915,15 +4099,41 @@ document.addEventListener("click", (event) => {
 });
 
 if (loginForm) {
-  loginForm.addEventListener("submit", (event) => {
+  loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const workspace = document.querySelector("[data-login-workspace]")?.value || currentCopy().top.workspace;
-    state.authState = "signedIn";
-    state.currentWorkspace = workspace;
-    renderAuth();
-    renderWorkflow();
-    renderTopState();
-    showToast(currentCopy().toasts.loginSuccess);
+    const accessCode = document.querySelector("[data-login-access-code]")?.value || "";
+    state.loginState = "loading";
+    state.loginMessage = "";
+    renderLoginPanel();
+    try {
+      const response = await fetch("/api/session", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accessCode, workspace })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const code = result?.error?.code;
+        state.loginMessage = code === "AUTH_NOT_CONFIGURED"
+          ? currentAiCopy().login.notConfigured
+          : currentAiCopy().login.invalid;
+        return;
+      }
+      state.authState = "signedIn";
+      state.currentWorkspace = result.workspace || workspace;
+      document.querySelector("[data-login-access-code]").value = "";
+      renderAuth();
+      renderWorkflow();
+      renderTopState();
+      showToast(currentCopy().toasts.loginSuccess);
+    } catch {
+      state.loginMessage = currentAiCopy().login.network;
+    } finally {
+      state.loginState = "idle";
+      renderLoginPanel();
+    }
   });
 }
 
@@ -2931,38 +4141,9 @@ if (dishForm) {
   dishForm.addEventListener("input", handleBriefControlChange);
   dishForm.addEventListener("change", handleBriefControlChange);
 
-  dishForm.addEventListener("submit", (event) => {
+  dishForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const c = currentCopy();
-    const form = syncBriefFormFromControls();
-    const missingRequired = getMissingRequiredFields(form);
-
-    if (missingRequired.length) {
-      missingRequired.forEach(markBriefTouched);
-      renderBriefFeedback(true);
-      showToast(c.toasts.missingBriefRequired);
-      return;
-    }
-
-    dishBrief.removeAttribute("aria-invalid");
-    dishBrief.removeAttribute("aria-describedby");
-    dishError.hidden = true;
-    generateButton.classList.add("is-loading");
-    setButtonContent(generateButton, "loader-circle", c.ideation.generating);
-
-    window.setTimeout(() => {
-      generateButton.classList.remove("is-loading");
-      setButtonContent(generateButton, "sparkles", currentCopy().ideation.generate);
-      state.blueprintDraft = true;
-      blueprintState.textContent = state.language === "zh" ? "V5 草案就绪" : "V5 draft ready";
-      syncActiveProjectFromForm();
-      advanceWorkflowTo("blueprint");
-      renderProjectCenter();
-      renderWorkflow();
-      renderTopState();
-      showToast(currentCopy().toasts.generated);
-      switchView("blueprint");
-    }, 850);
+    await generateRobotData(generateButton);
   });
 }
 
@@ -3000,28 +4181,50 @@ document.querySelectorAll("[data-action='invite-reviewer']").forEach((button) =>
   });
 });
 
-robotizeButton?.addEventListener("click", () => {
-  syncBriefFormFromControls();
-  if (!getActiveBriefForm().chefRecipe) {
-    showToast(currentCopy().toasts.missingChefRecipe);
-    renderBriefFeedback();
-    return;
-  }
-  state.robotized = true;
-  renderSteps();
-  showToast(currentCopy().toasts.robotized);
+robotizeButton?.addEventListener("click", async () => {
+  await standardizeChefRecipe(robotizeButton);
 });
 
-document.querySelector("[data-action='compare-locales']").addEventListener("click", () => {
-  showToast(currentCopy().toasts.compared);
+document.querySelector("[data-action='analyze-brief']")?.addEventListener("click", async (event) => {
+  await analyzeBrief(event.currentTarget);
+});
+
+document.querySelector("[data-action='analyze-experiments']")?.addEventListener("click", async (event) => {
+  await analyzeExperiments(event.currentTarget);
+});
+
+document.querySelector("[data-action='compare-locales']")?.addEventListener("click", async (event) => {
+  await researchLocalization(event.currentTarget);
+});
+
+document.querySelector("[data-action='generate-final-recipe']")?.addEventListener("click", async (event) => {
+  await generateFinalRecipe(event.currentTarget);
+});
+
+document.querySelector("[data-experiment-photos]")?.addEventListener("change", async (event) => {
+  await addExperimentPhotos(event.target.files);
+  event.target.value = "";
+});
+
+document.querySelector("[data-experiment-form]")?.addEventListener("input", (event) => {
+  if (!event.target.matches("[data-experiment-input]")) return;
+  syncExperimentInputs();
+  ensureProjectAi().experimentComparison = null;
+  ensureProjectAi().translations = {};
+  markBriefDirty();
+  renderVersions();
 });
 
 document.querySelector("[data-conflict-list]")?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action='resolve-conflict']");
   if (!button) return;
   const conflictId = button.dataset.conflictId;
+  const resolutionId = button.dataset.resolutionId;
   if (conflictId && !state.briefResolvedConflicts.includes(conflictId)) {
     state.briefResolvedConflicts.push(conflictId);
+  }
+  if (conflictId && resolutionId) {
+    ensureProjectAi().conflictResolutions[conflictId] = resolutionId;
   }
   markBriefDirty();
   renderBriefFeedback();
@@ -3029,9 +4232,29 @@ document.querySelector("[data-conflict-list]")?.addEventListener("click", (event
 });
 
 document.addEventListener("click", (event) => {
-  if (!state.marketMenuOpen || event.target.closest("[data-market-dropdown]")) return;
-  state.marketMenuOpen = false;
-  renderMarketOptions();
+  let shouldRenderMarket = false;
+  let shouldRenderChoices = false;
+  let shouldRenderLoginWorkspace = false;
+
+  if (state.marketMenuOpen && !event.target.closest("[data-market-dropdown]")) {
+    state.marketMenuOpen = false;
+    shouldRenderMarket = true;
+  }
+
+  if (state.openSelectKey && !event.target.closest("[data-choice-dropdown]")) {
+    state.openSelectKey = null;
+    shouldRenderChoices = true;
+  }
+
+  if (state.loginWorkspaceMenuOpen && !event.target.closest("[data-login-workspace-dropdown]")) {
+    state.loginWorkspaceMenuOpen = false;
+    shouldRenderLoginWorkspace = true;
+  }
+
+  if (shouldRenderMarket) renderMarketOptions();
+  if (shouldRenderChoices) renderChoiceSelects();
+  if (shouldRenderLoginWorkspace) renderLoginWorkspaceOptions();
 });
 
 applyLanguage();
+checkSession();
