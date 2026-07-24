@@ -60,10 +60,15 @@ Add the following variables in Vercel Project Settings → Environment Variables
 
 在 Vercel 项目设置 → Environment Variables 中，为 Preview 和 Production 添加以下变量：
 
-- `OPENAI_API_KEY`: a project-scoped OpenAI API key / OpenAI 项目级 API Key
-- `OPENAI_MODEL`: `gpt-5.6-terra`
+- `AI_PROVIDER`: `moonshot`
+- `MOONSHOT_API_KEY`: a Kimi Open Platform API key / Kimi 开放平台 API Key
+- `MOONSHOT_MODEL`: `kimi-k3`
 - `DEMO_ACCESS_CODE`: the shared code used on the demo login page / 演示登录页使用的共享口令
 - `SESSION_SECRET`: a random secret of at least 32 characters / 至少 32 位的随机会话密钥
+
+The previous `OPENAI_API_KEY` and `OPENAI_MODEL` variables are no longer read by the application and can be removed after the Kimi deployment is verified.
+
+原有的 `OPENAI_API_KEY` 与 `OPENAI_MODEL` 已不再被应用读取；确认 Kimi 部署可用后即可删除。
 
 Never prefix these variables with `NEXT_PUBLIC_` or place real values in `app.js`, Git, or `.env.example`.
 
@@ -95,9 +100,9 @@ npm install
 npm run dev:web
 ```
 
-On first use, the Vercel CLI may ask you to sign in and link this folder to the existing Vercel project. Add the four environment variables to `.env.local`, or pull the Development variables from Vercel. Never commit `.env.local`.
+On first use, the Vercel CLI may ask you to sign in and link this folder to the existing Vercel project. Add the five environment variables to `.env.local`, or pull the Development variables from Vercel. Never commit `.env.local`.
 
-首次运行时，Vercel CLI 可能要求登录并将当前文件夹关联到现有 Vercel 项目。请把四个环境变量写入 `.env.local`，或从 Vercel 拉取 Development 环境变量。不要提交 `.env.local`。
+首次运行时，Vercel CLI 可能要求登录并将当前文件夹关联到现有 Vercel 项目。请把五个环境变量写入 `.env.local`，或从 Vercel 拉取 Development 环境变量。不要提交 `.env.local`。
 
 ```bash
 npx vercel@56.5.0 link

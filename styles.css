@@ -2546,6 +2546,27 @@ input[type="range"] {
   gap: var(--gap-card);
 }
 
+.localization-inference-notice {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid color-mix(in oklab, var(--warning) 55%, var(--line));
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--warning) 10%, var(--surface));
+  color: var(--warning-ink);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.localization-inference-notice svg {
+  flex: 0 0 auto;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.125rem;
+}
+
 .locale-card {
   display: grid;
   grid-template-rows: auto;
@@ -2581,17 +2602,6 @@ input[type="range"] {
 .source-panel a {
   color: var(--primary-dark);
   font-weight: 700;
-}
-
-.source-facts li,
-.source-date {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.source-date {
-  color: var(--muted);
-  font-size: 0.75rem;
 }
 
 .step-list-heading {

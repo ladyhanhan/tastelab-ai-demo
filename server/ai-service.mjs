@@ -1,27 +1,10 @@
 import OpenAI from "openai";
-import { zodTextFormat } from "openai/helpers/zod";
+import { z } from "zod";
 
 import { aiSchemas } from "./ai-schemas.mjs";
 import { buildPrompt } from "./ai-prompts.mjs";
 
-function extractCitations(response) {
-  const citations = [];
-  const seen = new Set();
-  for (const output of response.output || []) {
-    if (output.type !== "message") continue;
-    for (const content of output.content || []) {
-      for (const annotation of content.annotations || []) {
-        if (annotation.type !== "url_citation" || !annotation.url || seen.has(annotation.url)) continue;
-        seen.add(annotation.url);
-        citations.push({
-          url: annotation.url,
-          title: annotation.title || annotation.url
-        });
-      }
-    }
-  }
-  return citations;
-}
+const MOONSHOT_BASE_URL = "https://api.moonshot.ai/v1";
 
 function sameJsonShape(source, translated) {
   if (source === null || translated === null) return source === translated;
@@ -41,19 +24,68 @@ function sameJsonShape(source, translated) {
   return source === translated;
 }
 
-function normalizeLocalizationSources(data, citations) {
+export function normalizeLocalizationAsInference(data, locale) {
   if (!data?.variants) return data;
-  const allowedUrls = new Set(citations.map((citation) => citation.url));
+  const notice = locale === "zh-CN"
+    ? "本地化建议未使用实时联网搜索，全部市场结论均为 AI 推断，必须由当地团队人工验证。"
+    : "Localization did not use live web search. All market conclusions are AI inferences and require validation by local teams.";
   return {
     ...data,
     variants: data.variants.map((variant) => ({
       ...variant,
-      sourcedFacts: variant.sourcedFacts.map((fact) => ({
-        ...fact,
-        sourceUrl: allowedUrls.has(fact.sourceUrl) ? fact.sourceUrl : ""
-      }))
-    }))
+      sourcedFacts: [],
+      inferences: [
+        ...new Set([
+          ...variant.inferences,
+          ...variant.sourcedFacts.map((fact) => fact.claim)
+        ])
+      ]
+    })),
+    warnings: [...new Set([notice, ...(data.warnings || [])])]
   };
+}
+
+function structuredSystemPrompt(prompt, schema) {
+  const jsonSchema = z.toJSONSchema(schema);
+  delete jsonSchema.$schema;
+  return `${prompt.system}
+
+Return one valid JSON object only. Do not wrap it in Markdown or add explanatory text.
+The JSON object must conform exactly to this schema:
+${JSON.stringify(jsonSchema)}`;
+}
+
+function userContent(task, prompt, payload) {
+  if (task !== "experiment_compare" || !(payload.photos || []).length) {
+    return prompt.user;
+  }
+  return [
+    { type: "text", text: prompt.user },
+    ...(payload.photos || []).map((imageUrl) => ({
+      type: "image_url",
+      image_url: { url: imageUrl }
+    }))
+  ];
+}
+
+function invalidOutput(message) {
+  const error = new Error(message);
+  error.code = "AI_INVALID_OUTPUT";
+  return error;
+}
+
+export function parseStructuredResult(task, content) {
+  let value;
+  try {
+    value = JSON.parse(content);
+  } catch {
+    throw invalidOutput("The model did not return valid JSON");
+  }
+  const result = aiSchemas[task].safeParse(value);
+  if (!result.success) {
+    throw invalidOutput("The model result did not match the required data structure");
+  }
+  return result.data;
 }
 
 export async function runAiTask({
@@ -62,74 +94,51 @@ export async function runAiTask({
   task,
   locale,
   payload,
-  safetyIdentifier,
   signal
 }) {
-  const openai = new OpenAI({ apiKey });
+  const moonshot = new OpenAI({
+    apiKey,
+    baseURL: MOONSHOT_BASE_URL
+  });
   const prompt = buildPrompt(task, locale, payload);
-  const schema = aiSchemas[task];
-  const usesWebSearch = task === "localization_research";
-  const reasoningEffort = ["robot_data_generate", "localization_research", "final_recipe_generate"].includes(task)
-    ? "medium"
-    : "low";
-  const imageContent = task === "experiment_compare"
-    ? (payload.photos || []).map((imageUrl) => ({
-        type: "input_image",
-        image_url: imageUrl,
-        detail: "auto"
-      }))
-    : [];
-
-  const response = await openai.responses.parse({
+  const response = await moonshot.chat.completions.create({
     model,
-    store: false,
-    safety_identifier: safetyIdentifier,
-    reasoning: { effort: reasoningEffort },
-    tools: usesWebSearch ? [{ type: "web_search", search_context_size: "medium" }] : undefined,
-    input: [
-      { role: "system", content: prompt.system },
+    messages: [
+      {
+        role: "system",
+        content: structuredSystemPrompt(prompt, aiSchemas[task])
+      },
       {
         role: "user",
-        content: [
-          { type: "input_text", text: prompt.user },
-          ...imageContent
-        ]
+        content: userContent(task, prompt, payload)
       }
     ],
-    text: {
-      verbosity: "medium",
-      format: zodTextFormat(schema, `tastelab_${task}`)
-    }
+    response_format: { type: "json_object" },
+    max_completion_tokens: 16_000
   }, { signal });
 
-  if (!response.output_parsed) {
-    const error = new Error("The model did not return a valid structured result");
-    error.code = "AI_INVALID_OUTPUT";
-    throw error;
+  const content = response.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || !content.trim()) {
+    throw invalidOutput("The model returned an empty result");
   }
+  const parsed = parseStructuredResult(task, content);
 
-  const citations = extractCitations(response);
   if (task === "translate_result") {
     let translated;
     try {
-      translated = JSON.parse(response.output_parsed.translatedJson);
+      translated = JSON.parse(parsed.translatedJson);
     } catch {
-      const error = new Error("The translated result was not valid JSON");
-      error.code = "AI_INVALID_OUTPUT";
-      throw error;
+      throw invalidOutput("The translated result was not valid JSON");
     }
     if (!sameJsonShape(payload.data, translated)) {
-      const error = new Error("The translated result changed the source data structure");
-      error.code = "AI_INVALID_OUTPUT";
-      throw error;
+      throw invalidOutput("The translated result changed the source data structure");
     }
-    return { data: translated, citations: [] };
+    return { data: translated, citations: [], warnings: [] };
   }
 
   const data = task === "localization_research"
-    ? normalizeLocalizationSources(response.output_parsed, citations)
-    : response.output_parsed;
+    ? normalizeLocalizationAsInference(parsed, locale)
+    : parsed;
   const warnings = Array.isArray(data.warnings) ? data.warnings : [];
-  return { data, citations, warnings };
+  return { data, citations: [], warnings };
 }
-

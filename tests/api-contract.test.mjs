@@ -54,12 +54,12 @@ test("AI response envelope includes provenance", () => {
   const envelope = createAiEnvelope({
     task: "brief_analyze",
     locale: "zh-CN",
-    model: "gpt-5.6-terra",
+    model: "kimi-k3",
     data: { recognizedFacts: [] }
   });
 
   assert.equal(envelope.task, "brief_analyze");
-  assert.equal(envelope.model, "gpt-5.6-terra");
+  assert.equal(envelope.model, "kimi-k3");
   assert.match(envelope.requestId, /^ai_/);
   assert.ok(Date.parse(envelope.generatedAt));
   assert.deepEqual(envelope.warnings, []);

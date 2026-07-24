@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import {
   MAX_AI_REQUEST_BYTES,
   createAiEnvelope,
@@ -11,10 +9,6 @@ import { errorJson, requireSession } from "../server/http.mjs";
 export const maxDuration = 90;
 
 const recentCalls = new Map();
-
-function safetyIdentifier(sessionId) {
-  return `demo_${createHash("sha256").update(sessionId).digest("hex").slice(0, 32)}`;
-}
 
 function validatePhotos(payload) {
   const photos = payload.photos;
@@ -37,7 +31,7 @@ function throttle(sessionId, task) {
   return now - previous < 700;
 }
 
-function mapOpenAiError(error, requestId) {
+function mapAiError(error, requestId) {
   if (error?.name === "AbortError") {
     return errorJson("AI_TIMEOUT", "The AI request timed out. Please retry.", 504, requestId);
   }
@@ -48,7 +42,7 @@ function mapOpenAiError(error, requestId) {
     return errorJson("AI_RATE_LIMITED", "The AI service is busy. Please retry shortly.", 429, requestId);
   }
   if (error?.status === 401) {
-    return errorJson("AI_KEY_INVALID", "The OpenAI API key is invalid.", 503, requestId);
+    return errorJson("AI_KEY_INVALID", "The configured AI provider key is invalid.", 503, requestId);
   }
   if (error?.status >= 500) {
     return errorJson("AI_UPSTREAM_ERROR", "The AI service is temporarily unavailable.", 503, requestId);
@@ -62,8 +56,12 @@ export async function POST(request) {
   if (!session) {
     return errorJson("AUTH_REQUIRED", "Sign in to use TasteLab AI.", 401, requestId);
   }
-  if (!process.env.OPENAI_API_KEY) {
-    return errorJson("AI_NOT_CONFIGURED", "OpenAI API access is not configured.", 503, requestId);
+  const provider = process.env.AI_PROVIDER || "moonshot";
+  if (provider !== "moonshot") {
+    return errorJson("AI_NOT_CONFIGURED", "The configured AI provider is not supported.", 503, requestId);
+  }
+  if (!process.env.MOONSHOT_API_KEY) {
+    return errorJson("AI_NOT_CONFIGURED", "Kimi API access is not configured.", 503, requestId);
   }
 
   const contentLength = Number(request.headers.get("content-length") || 0);
@@ -90,14 +88,13 @@ export async function POST(request) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 85_000);
   try {
-    const model = process.env.OPENAI_MODEL || "gpt-5.6-terra";
+    const model = process.env.MOONSHOT_MODEL || "kimi-k3";
     const result = await runAiTask({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: process.env.MOONSHOT_API_KEY,
       model,
       task: body.task,
       locale: body.locale,
       payload: body.payload,
-      safetyIdentifier: safetyIdentifier(session.id),
       signal: controller.signal
     });
     return new Response(JSON.stringify(createAiEnvelope({
@@ -121,9 +118,8 @@ export async function POST(request) {
       status: error?.status || 500,
       code: error?.code || error?.name || "UNKNOWN"
     }));
-    return mapOpenAiError(error, requestId);
+    return mapAiError(error, requestId);
   } finally {
     clearTimeout(timeout);
   }
 }
-

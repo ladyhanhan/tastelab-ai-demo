@@ -85,12 +85,12 @@ AI is presented as an inspectable workflow action, not as a generic chat surface
 
 AI 以可检查的流程操作呈现，而不是通用聊天界面。每个 AI 模块都需要空状态、显式触发、处理中状态、校验后的结果和可恢复的错误状态。
 
-- Processing feedback uses concise user-facing phases such as constraint validation, execution-stage generation, risk checks, market search, and source verification. Internal reasoning is never displayed.
-  处理反馈使用“校验约束、生成执行阶段、检查风险、检索市场、核对来源”等面向用户的简短阶段，不展示内部推理。
+- Processing feedback uses concise user-facing phases such as constraint validation, execution-stage generation, risk checks, market-difference analysis, and validation-item preparation. Internal reasoning is never displayed.
+  处理反馈使用“校验约束、生成执行阶段、检查风险、分析市场差异、整理验证项”等面向用户的简短阶段，不展示内部推理。
 - Generated robot data always carries a persistent warning that it is an AI demo draft and cannot be sent directly to equipment.
   AI 生成的机器人数据始终显示常驻警示，说明其为演示草案，不可直接下发设备。
-- Localization cards visually separate sourced facts, AI inferences, and items requiring human validation. Source links and publication dates are visible and actionable.
-  本地化卡片在视觉上区分来源事实、AI 推断和待人工验证项，并清晰展示可点击的来源链接与发布日期。
+- Localization cards carry a persistent inference notice and visually separate AI proposals from items requiring local-team validation. Live web sources are not shown while search is disabled.
+  本地化卡片常驻显示“AI 推断”提示，并在视觉上区分 AI 建议与当地团队待验证项；联网搜索关闭期间不展示实时来源。
 - Experiment photo analysis shows the uploaded images and a capability boundary that excludes food safety, real doneness, and actual taste.
   实验照片分析显示用户上传的图片，并明确排除食品安全、真实熟度和实际口感判断。
 - Language changes never mix source-language AI content into the target-language interface. The translated result loads separately and is cached only for the current page session.

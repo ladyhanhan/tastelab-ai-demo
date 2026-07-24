@@ -7,7 +7,8 @@ import { POST as runAi } from "../api/ai.mjs";
 const ORIGINAL_ENV = {
   DEMO_ACCESS_CODE: process.env.DEMO_ACCESS_CODE,
   SESSION_SECRET: process.env.SESSION_SECRET,
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY
+  AI_PROVIDER: process.env.AI_PROVIDER,
+  MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY
 };
 
 function restoreEnvironment() {
@@ -80,7 +81,7 @@ test("a valid session cookie authenticates a later request", async () => {
 
 test("AI endpoint requires an authenticated session", async () => {
   process.env.SESSION_SECRET = "a-long-demo-session-secret";
-  process.env.OPENAI_API_KEY = "test-key";
+  process.env.MOONSHOT_API_KEY = "test-key";
 
   const response = await runAi(new Request("https://demo.example/api/ai", {
     method: "POST",
@@ -97,10 +98,11 @@ test("AI endpoint requires an authenticated session", async () => {
   assert.equal((await response.json()).error.code, "AUTH_REQUIRED");
 });
 
-test("AI endpoint reports a missing OpenAI key after authentication", async () => {
+test("AI endpoint reports a missing Kimi key after authentication", async () => {
   process.env.DEMO_ACCESS_CODE = "correct-code";
   process.env.SESSION_SECRET = "a-long-demo-session-secret";
-  delete process.env.OPENAI_API_KEY;
+  process.env.AI_PROVIDER = "moonshot";
+  delete process.env.MOONSHOT_API_KEY;
 
   const loginResponse = await createSession(new Request("https://demo.example/api/session", {
     method: "POST",

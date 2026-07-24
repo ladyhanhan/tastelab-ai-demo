@@ -1283,9 +1283,9 @@ const aiUi = {
       generatingRobot: "正在生成机器人数据",
       analyzeExperiment: "AI 对比实验",
       analyzingExperiment: "正在分析实验",
-      research: "开始联网研究",
-      researching: "正在联网研究",
-      researchAgain: "重新联网研究",
+      research: "开始 AI 适配",
+      researching: "正在生成适配建议",
+      researchAgain: "重新生成适配建议",
       generateFinal: "生成最终菜谱",
       generatingFinal: "正在生成最终菜谱",
       retry: "重试"
@@ -1301,7 +1301,7 @@ const aiUi = {
       evidence: "输入依据",
       confidence: "置信提示",
       phasesRobot: ["正在校验约束", "正在生成执行阶段", "正在检查风险"],
-      phasesLocalization: ["正在检索目标市场", "正在核对来源", "正在形成适配建议"],
+      phasesLocalization: ["正在分析市场差异", "正在形成适配假设", "正在整理人工验证项"],
       processing: "AI 正在处理",
       completed: "AI 生成完成",
       cancelled: "已取消",
@@ -1316,13 +1316,13 @@ const aiUi = {
       deviceWarning: "参数不可直接下发设备，必须由 Botinkit 工程与厨务团队验证。",
       waitingRobot: "完成 Brief 后生成机器人数据。",
       waitingExperiment: "录入本轮实验数据后，AI 将比较结果并提出下一轮建议。",
-      waitingLocalization: "开始联网研究后，这里将展示来源事实、AI 推断和待人工验证项。",
+      waitingLocalization: "开始 AI 适配后，这里将展示市场推断、适配建议和待人工验证项。",
       waitingFinal: "完成并确认前序阶段后生成正式菜谱。"
     },
     errors: {
       AUTH_REQUIRED: "登录已失效，请重新输入演示口令。",
-      AI_NOT_CONFIGURED: "AI 服务尚未配置，请在 Vercel 设置 OPENAI_API_KEY。",
-      AI_KEY_INVALID: "OpenAI API Key 无效，请检查 Vercel 环境变量。",
+      AI_NOT_CONFIGURED: "AI 服务尚未配置，请在 Vercel 设置 MOONSHOT_API_KEY。",
+      AI_KEY_INVALID: "Kimi API Key 无效，请检查 Vercel 环境变量。",
       AI_RATE_LIMITED: "AI 服务当前繁忙或额度受限，请稍后重试。",
       REQUEST_THROTTLED: "操作太快，请稍后再试。",
       PAYLOAD_TOO_LARGE: "图片请求超过 4MB，请减少照片或使用更小图片。",
@@ -1375,8 +1375,6 @@ const aiUi = {
       photoLimit: "最多上传 3 张照片，压缩前总大小不能超过 10MB。"
     },
     localization: {
-      facts: "来源事实",
-      publicationDate: "发布日期",
       inference: "AI 推断",
       validation: "待人工验证",
       taste: "口味调整",
@@ -1384,7 +1382,7 @@ const aiUi = {
       cost: "成本假设",
       execution: "机器人执行影响",
       sharedCore: "不可改变的菜品核心",
-      sources: "研究来源"
+      inferenceNotice: "本页未进行实时联网搜索。全部市场结论均为 AI 推断，必须由当地团队人工验证。"
     },
     final: {
       ingredients: "原料",
@@ -1416,9 +1414,9 @@ const aiUi = {
       generatingRobot: "Generating robot data",
       analyzeExperiment: "Compare experiment",
       analyzingExperiment: "Analyzing experiment",
-      research: "Start web research",
-      researching: "Researching",
-      researchAgain: "Research again",
+      research: "Generate AI adaptations",
+      researching: "Generating adaptations",
+      researchAgain: "Regenerate adaptations",
       generateFinal: "Generate final recipe",
       generatingFinal: "Generating final recipe",
       retry: "Retry"
@@ -1434,7 +1432,7 @@ const aiUi = {
       evidence: "Input evidence",
       confidence: "Confidence",
       phasesRobot: ["Validating constraints", "Generating execution stages", "Checking risks"],
-      phasesLocalization: ["Searching target markets", "Checking sources", "Building adaptation proposals"],
+      phasesLocalization: ["Analyzing market differences", "Forming adaptation assumptions", "Preparing validation items"],
       processing: "AI is processing",
       completed: "AI generation complete",
       cancelled: "Cancelled",
@@ -1449,13 +1447,13 @@ const aiUi = {
       deviceWarning: "Parameters cannot be sent to equipment. Botinkit engineering and culinary teams must validate them.",
       waitingRobot: "Complete the Brief to generate robot data.",
       waitingExperiment: "Enter experiment records for AI comparison and next-round recommendations.",
-      waitingLocalization: "Start web research to see sourced facts, AI inferences, and validation items.",
+      waitingLocalization: "Generate AI adaptations to see market inferences, proposals, and validation items.",
       waitingFinal: "Complete and confirm the preceding stages to generate a formal recipe."
     },
     errors: {
       AUTH_REQUIRED: "Your session expired. Enter the demo access code again.",
-      AI_NOT_CONFIGURED: "AI is not configured. Add OPENAI_API_KEY in Vercel.",
-      AI_KEY_INVALID: "The OpenAI API key is invalid. Check the Vercel environment variable.",
+      AI_NOT_CONFIGURED: "AI is not configured. Add MOONSHOT_API_KEY in Vercel.",
+      AI_KEY_INVALID: "The Kimi API key is invalid. Check the Vercel environment variable.",
       AI_RATE_LIMITED: "The AI service is busy or quota-limited. Retry shortly.",
       REQUEST_THROTTLED: "That was too fast. Wait briefly and retry.",
       PAYLOAD_TOO_LARGE: "The photo request exceeds 4MB. Remove photos or use smaller files.",
@@ -1508,8 +1506,6 @@ const aiUi = {
       photoLimit: "Upload up to 3 photos, with no more than 10MB total before compression."
     },
     localization: {
-      facts: "Sourced facts",
-      publicationDate: "Published",
       inference: "AI inferences",
       validation: "Human validation needed",
       taste: "Taste adjustments",
@@ -1517,7 +1513,7 @@ const aiUi = {
       cost: "Cost assumption",
       execution: "Robot execution impact",
       sharedCore: "Dish core that must not change",
-      sources: "Research sources"
+      inferenceNotice: "This page does not use live web search. All market conclusions are AI inferences and require validation by local teams."
     },
     final: {
       ingredients: "Ingredients",
@@ -1619,15 +1615,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function safeExternalUrl(value) {
-  try {
-    const url = new URL(String(value));
-    return ["https:", "http:"].includes(url.protocol) ? url.href : "";
-  } catch {
-    return "";
-  }
 }
 
 function localeCode() {
@@ -3435,7 +3422,7 @@ function renderLocalization() {
   const researchButton = document.querySelector("[data-action='compare-locales']");
 
   if (researchButton && !researchButton.classList.contains("is-loading")) {
-    setButtonContent(researchButton, "search", data ? ui.actions.researchAgain : ui.actions.research);
+    setButtonContent(researchButton, "sparkles", data ? ui.actions.researchAgain : ui.actions.research);
   }
   if (!grid) return;
   if (!data) {
@@ -3445,7 +3432,12 @@ function renderLocalization() {
     return;
   }
 
-  grid.innerHTML = data.variants.map((variant) => `
+  grid.innerHTML = `
+    <div class="localization-inference-notice" role="note">
+      <i data-lucide="triangle-alert" aria-hidden="true"></i>
+      <span>${escapeHtml(ui.localization.inferenceNotice)}</span>
+    </div>
+    ${data.variants.map((variant) => `
     <article class="locale-card">
       <h3>${escapeHtml(variant.market)}</h3>
       <p>${escapeHtml(variant.summary)}</p>
@@ -3455,31 +3447,19 @@ function renderLocalization() {
         <div><dt>${escapeHtml(ui.localization.cost)}</dt><dd>${escapeHtml(variant.costAssumption)}</dd></div>
         <div><dt>${escapeHtml(ui.localization.execution)}</dt><dd>${escapeHtml(variant.executabilityImpact)}</dd></div>
       </dl>
-      ${variant.sourcedFacts.length ? `<section class="source-facts"><h4>${escapeHtml(ui.localization.facts)}</h4><ul>${variant.sourcedFacts.map((item) => {
-        const sourceUrl = safeExternalUrl(item.sourceUrl);
-        const publicationDate = item.publicationDate
-          ? `<span class="source-date">${escapeHtml(ui.localization.publicationDate)}: ${escapeHtml(item.publicationDate)}</span>`
-          : "";
-        return `<li><span>${escapeHtml(item.claim)}${sourceUrl ? ` <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">↗</a>` : ""}</span>${publicationDate}</li>`;
-      }).join("")}</ul></section>` : ""}
       ${variant.inferences.length ? `<section><h4>${escapeHtml(ui.localization.inference)}</h4><ul>${variant.inferences.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
       ${variant.validationItems.length ? `<section class="is-warning"><h4>${escapeHtml(ui.localization.validation)}</h4><ul>${variant.validationItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : ""}
     </article>
-  `).join("");
+  `).join("")}`;
   if (sources) {
-    const citations = result.citations || [];
-    sources.hidden = citations.length === 0;
+    sources.hidden = false;
     sources.innerHTML = `
-      <h3>${escapeHtml(ui.localization.sources)}</h3>
-      <ol>${citations.map((citation) => {
-        const citationUrl = safeExternalUrl(citation.url);
-        return citationUrl ? `<li><a href="${escapeHtml(citationUrl)}" target="_blank" rel="noreferrer">${escapeHtml(citation.title || citation.url)}</a></li>` : "";
-      }).join("")}</ol>
       <h3>${escapeHtml(ui.localization.sharedCore)}</h3>
       <ul>${data.sharedCore.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
     `;
   }
   if (finalButton) finalButton.disabled = false;
+  renderIcons();
 }
 
 async function translateGeneratedResults(targetLanguage) {
