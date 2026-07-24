@@ -52,18 +52,32 @@ Because the site now depends on `/api/session` and `/api/ai`, opening `index.htm
 
 网站现在依赖 `/api/session` 与 `/api/ai`，直接用 `file://` 打开 `index.html` 只能查看布局，不能运行登录或 AI。
 
-Use Vercel CLI or a Preview deployment for the complete flow:
+Use the project's local Vercel runtime or a Preview deployment for the complete flow:
 
-完整流程请使用 Vercel CLI 或 Preview 部署：
+完整流程请使用项目内置的本地 Vercel 运行环境或 Preview 部署：
 
 ```bash
 npm install
-vercel dev
+npm run dev:web
 ```
 
-Then open the local URL printed by Vercel CLI.
+Then open `http://localhost:4173`.
 
-然后打开 Vercel CLI 输出的本地地址。
+然后打开 `http://localhost:4173`。
+
+On first use, link the folder to the existing Vercel project and pull its Development environment variables:
+
+首次运行时，请把当前文件夹关联到已有 Vercel 项目，并拉取 Development 环境变量：
+
+```bash
+npx vercel@56.5.0 link
+npx vercel@56.5.0 env pull .env.local --environment=development
+npm run dev:web
+```
+
+The local AI flow requires `OPENAI_API_KEY`, `OPENAI_MODEL`, `DEMO_ACCESS_CODE`, and `SESSION_SECRET` in `.env.local`. Never commit this file.
+
+本地 AI 流程需要在 `.env.local` 中配置 `OPENAI_API_KEY`、`OPENAI_MODEL`、`DEMO_ACCESS_CODE` 和 `SESSION_SECRET`。不要提交该文件。
 
 ## AI Workflow / AI 流程
 

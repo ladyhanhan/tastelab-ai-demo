@@ -84,6 +84,31 @@ After changing an environment variable, redeploy the latest commit so the Functi
 4. Share the Vercel preview or production URL for demos.
    使用 Vercel 预览链接或正式链接进行演示分享。
 
+## Local Preview / 本地预览
+
+Opening `index.html` directly still works for layout review, but a `file://` page cannot run `/api/session` or `/api/ai`. Use the local Vercel runtime for login and real AI:
+
+直接打开 `index.html` 仍可用于查看布局，但 `file://` 页面无法运行 `/api/session` 或 `/api/ai`。需要登录和真实 AI 时，请使用本地 Vercel 运行环境：
+
+```bash
+npm install
+npm run dev:web
+```
+
+On first use, the Vercel CLI may ask you to sign in and link this folder to the existing Vercel project. Add the four environment variables to `.env.local`, or pull the Development variables from Vercel. Never commit `.env.local`.
+
+首次运行时，Vercel CLI 可能要求登录并将当前文件夹关联到现有 Vercel 项目。请把四个环境变量写入 `.env.local`，或从 Vercel 拉取 Development 环境变量。不要提交 `.env.local`。
+
+```bash
+npx vercel@56.5.0 link
+npx vercel@56.5.0 env pull .env.local --environment=development
+npm run dev:web
+```
+
+Open `http://localhost:4173` after the server starts.
+
+服务启动后打开 `http://localhost:4173`。
+
 ## Notes / 注意事项
 
 The repository also contains Remotion dependencies, but Vercel should not run a Remotion build. Keep Framework Preset as `Other`; dependency installation is still required for the `openai` and `zod` server packages.

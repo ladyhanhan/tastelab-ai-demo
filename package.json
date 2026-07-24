@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "remotion studio src/index.ts --port=3000",
+    "dev:web": "npx vercel@56.5.0 dev --listen 4173",
     "test": "node --test tests/*.test.mjs",
     "still": "remotion still src/index.ts AiAgentOpening out/ai-agent-opening-frame150.png --frame=150 --scale=0.35",
     "render": "remotion render src/index.ts AiAgentOpening out/ai-agent-opening.mp4"

@@ -1308,6 +1308,10 @@ const aiUi = {
       translating: "正在翻译 AI 结果",
       translationFailed: "目标语言版本生成失败，请重试切换语言。",
       notReady: "请先完成必填项、执行 AI 解析并处理所有冲突。",
+      completeRequired: "请先完成必填项",
+      runAnalysis: "请先执行 AI 解析",
+      waitForAnalysis: "等待 AI 解析完成",
+      resolveConflicts: (count) => `请先处理 ${count} 项冲突`,
       aiDraft: "AI 演示草案",
       deviceWarning: "参数不可直接下发设备，必须由 Botinkit 工程与厨务团队验证。",
       waitingRobot: "完成 Brief 后生成机器人数据。",
@@ -1437,6 +1441,10 @@ const aiUi = {
       translating: "Translating AI result",
       translationFailed: "The target-language result failed. Switch language again to retry.",
       notReady: "Complete the required fields, run AI analysis, and resolve every conflict first.",
+      completeRequired: "Complete required fields first",
+      runAnalysis: "Run AI analysis first",
+      waitForAnalysis: "Wait for AI analysis",
+      resolveConflicts: (count) => `Resolve ${count} conflict${count === 1 ? "" : "s"} first`,
       aiDraft: "AI demo draft",
       deviceWarning: "Parameters cannot be sent to equipment. Botinkit engineering and culinary teams must validate them.",
       waitingRobot: "Complete the Brief to generate robot data.",
@@ -3112,10 +3120,22 @@ function renderBriefFeedback(forceMissing = false) {
   }
 
   if (generateButton && !generateButton.classList.contains("is-loading")) {
+    let generateLabel = ui.actions.generateRobot;
+
+    if (!completion.complete) {
+      generateLabel = ui.states.completeRequired;
+    } else if (state.briefAnalysisState === "analyzing") {
+      generateLabel = ui.states.waitForAnalysis;
+    } else if (!analysis || state.briefAnalysisState !== "ready") {
+      generateLabel = ui.states.runAnalysis;
+    } else if (unresolvedConflicts.length > 0) {
+      generateLabel = ui.states.resolveConflicts(unresolvedConflicts.length);
+    }
+
     generateButton.disabled = !canGenerate;
     generateButton.classList.toggle("is-disabled", !canGenerate);
-    generateButton.title = canGenerate ? "" : ui.states.notReady;
-    setButtonContent(generateButton, "sparkles", canGenerate ? ui.actions.generateRobot : c.ideation.requiredHint);
+    generateButton.title = canGenerate ? "" : generateLabel;
+    setButtonContent(generateButton, "sparkles", generateLabel);
   }
 
   if (robotizeButton) {
